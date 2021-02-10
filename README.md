@@ -17,11 +17,12 @@ $ tree -dL 1
 2 directories
 ```
 
-`enableccnt` contains the source for setting up a kernel module to enable
+- `enableccnt` contains the source for setting up a kernel module to enable
 user space access to the `PMCCNTR_EL0` System register. This allows us to
 read the `PMCCNTR_EL0` register which holds the value of the processor cycle
 counter.
 
-`ntruprime-20201007` contains the NTRU Prime software and supporting
-documentation. The `nistpqc` branch contains the original NTRU Prime NISTPQC
-full submission package, last updated 7 October 2020.
+- `ntruprime-20201007` contains the NTRU Prime software and supporting
+documentation. This has been taken from the original NTRU Prime NISTPQC full
+submission package, last updated 7 October 2020. All of this (and more) is
+made available through their [web page](https://ntruprime.cr.yp.to/).
