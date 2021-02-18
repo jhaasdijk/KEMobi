@@ -12,9 +12,10 @@ $ tree -dL 1
 
 .
 ├── enableccnt
-└── ntruprime-20201007
-
-2 directories
+├── ntruprime-20201007
+└── samples
+    ├── common
+    └── polymult
 ```
 
 - `enableccnt` contains the source for setting up a kernel module to enable
@@ -26,3 +27,10 @@ counter.
 documentation. This has been taken from the original NTRU Prime NISTPQC full
 submission package, last updated 7 October 2020. All of this (and more) is
 made available through their [web page](https://ntruprime.cr.yp.to/).
+
+- `samples` contains two directories; `common` and `polymult`. The `common`
+directory is used for sharing components (C sources, Makefile) which can be
+reused throughout the repository. The `polymult` directory is used to contain
+an initial implementation of cyclic convolution which can be used to multiply
+two polynomials within the polynomial field (Z/q) [x] / (x^p - x - 1), i.e.
+R/q.
