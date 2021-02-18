@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <stdlib.h>
 
-void polyPrint(uint64_t *A, uint64_t size);
-void polyMult(uint64_t *A, uint64_t *B, uint64_t lenA, uint64_t lenB, uint64_t *P);
+void convolution(uint32_t *A, uint32_t *B);
+void polyPrint(uint32_t *A);
+void polyMult(uint32_t *A, uint32_t *B, uint32_t *P);
+void polyRedterm(uint32_t *P);
+void polyRedcoef(uint32_t *P);
+
 int main(void);
