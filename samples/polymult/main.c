@@ -1,11 +1,8 @@
 #include "main.h"
 
-/* Declare and define the prime inputs p and q */
-/* p determines the degree of the polynomials */
-/* q determines the modulus of the integer coefficients */
-
-const uint32_t p = 5;
-const uint32_t q = 7;
+const uint32_t PRIMEP = 5;              /* p, determines the degree of the polynomials A and B */
+const uint32_t PDEG = 2 * (PRIMEP - 1); /* PDEG holds the maximum degree of (A * B) */
+const uint32_t PRIMEQ = 7;              /* q, determines the modulus of the integer coefficients */
 
 /**
  * The function convolution can be used to multiply two polynomials (A, B)
@@ -15,15 +12,13 @@ const uint32_t q = 7;
  * @param uint32_t *A   p-length array representing an element in R/q
  * @param uint32_t *B   p-length array representing an element in R/q
  */
-
 void convolution(uint32_t *A, uint32_t *B)
 {
     polyPrint(A); /* print polynomial A */
     polyPrint(B); /* print polynomial B */
 
-    uint32_t pdeg = 2 * (p - 1);      /* maximum degree of (A * B) */
-    uint32_t P[pdeg];                 /* declare a 'result' polynomial P */
-    for (size_t i = 0; i < pdeg; i++) /* and zero its content */
+    uint32_t P[PDEG];                 /* declare a 'result' polynomial P */
+    for (size_t i = 0; i < PDEG; i++) /* and zero its content */
     {
         P[i] = 0;
     }
@@ -31,8 +26,7 @@ void convolution(uint32_t *A, uint32_t *B)
     polyMult(A, B, P); /* multiply polynomials A and B, i.e. P = (A * B) */
     polyRedterm(P);    /* reduce polynomial P % ( x^p - x - 1 ) */
     polyRedcoef(P);    /* reduce polynomial P's integer coefficients */
-
-    polyPrint(P); /* print 'result' polynomial P */
+    polyPrint(P);      /* print 'result' polynomial P */
 }
 
 /**
@@ -46,7 +40,7 @@ void polyPrint(uint32_t *A)
     /* Skip over empty terms - terms with integer coefficient 0 */
 
     size_t i = 0;
-    while (A[i] == 0)
+    while (A[i] == 0 && i < PRIMEP - 1)
     {
         i += 1;
     }
@@ -59,7 +53,7 @@ void polyPrint(uint32_t *A)
 
     /* Print the rest of the nonzero elements */
 
-    for (; i < p; i++)
+    for (; i < PRIMEP; i++)
     {
         if (A[i] == 0)
         {
@@ -85,9 +79,9 @@ void polyPrint(uint32_t *A)
  */
 void polyMult(uint32_t *A, uint32_t *B, uint32_t *P)
 {
-    for (size_t i = 0; i < p; i++)
+    for (size_t i = 0; i < PRIMEP; i++)
     {
-        for (size_t j = 0; j < p; j++)
+        for (size_t j = 0; j < PRIMEP; j++)
         {
             P[i + j] += A[i] * B[j];
         }
@@ -103,13 +97,13 @@ void polyMult(uint32_t *A, uint32_t *B, uint32_t *P)
  */
 void polyRedterm(uint32_t *P)
 {
-    for (size_t i = p; i < (2 * (p - 1)); i++)
+    for (size_t i = PDEG - 1; i >= PRIMEP; i--)
     {
         if (P[i] > 0)
-        {                           /* x^p is nonzero */
-            P[i - (p - 1)] += P[i]; /* add x^p into x^1 */
-            P[i - p] += P[i];       /* add x^p into x^0 */
-            P[i] = 0;               /* zero x^p */
+        {                                /* x^p is nonzero */
+            P[i - (PRIMEP - 1)] += P[i]; /* add x^p into x^1 */
+            P[i - PRIMEP] += P[i];       /* add x^p into x^0 */
+            P[i] = 0;                    /* zero x^p */
         }
     }
 }
@@ -123,9 +117,9 @@ void polyRedterm(uint32_t *P)
  */
 void polyRedcoef(uint32_t *P)
 {
-    for (size_t i = 0; i < p; i++)
+    for (size_t i = 0; i < PRIMEP; i++)
     {
-        P[i] = P[i] % q;
+        P[i] = P[i] % PRIMEQ;
     }
 }
 
