@@ -32,5 +32,8 @@ made available through their [web page](https://ntruprime.cr.yp.to/).
 directory is used for sharing components (C sources, Makefile) which can be
 reused throughout the repository. The `polymult` directory is used to contain
 an initial implementation of cyclic convolution which can be used to multiply
-two polynomials within the polynomial field (Z/q) [x] / (x^p - x - 1), i.e.
-R/q.
+two polynomials within the polynomial field
+![(Z/q) [x] / (x^p - x - 1)](https://latex.codecogs.com/svg.latex?%28%5Cmathbb%7BZ%7D%2Fq%29%5C%20%5Bx%5D%5C%20%2F%5C%20%28x%5Ep%20-%20x%20-%201%29)
+, i.e. ![R/q](https://latex.codecogs.com/svg.latex?%5Cmathcal%7BR%7D%2Fq).
+
+
