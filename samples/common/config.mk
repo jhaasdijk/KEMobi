@@ -1,5 +1,8 @@
 # Shared Makefile components which can be reused throughout the repository
 # Tested and used with GNU Make 4.2.1
+#
+# -- config.mk
+# This file is used to define shared flags and variables
 
 # Ensure strict POSIX make rules.
 .POSIX :
@@ -11,7 +14,8 @@
 # Include C products, object files, make dependencies, assembler
 .SUFFIXES : .o .d .s
 
-# Choice of compiler, linker, utilities for object files
+# Choice of assembler, compiler, linker, utilities for object files
+AS = as
 CC = gcc
 LD = gcc
 OBJCOPY = objcopy
