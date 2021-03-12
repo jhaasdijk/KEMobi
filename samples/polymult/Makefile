@@ -1,18 +1,13 @@
 TARGET  = ${notdir ${CURDIR}}
 SRC_DIR = .
-COURCES = ${wildcard ${SRC_DIR}/*.c}
-SOURCES = ${COURCES}
-OBJECTS = ${SOURCES:.c=.o}
+C_FILES = ${wildcard ${SRC_DIR}/*.c}
+OBJ = ${C_FILES:.c=.o}
 
 default : all
 
-${TARGET} : ${OBJECTS}
+${TARGET} : ${OBJ}
 	@echo "Linking" $@ "from" $^ "..."
 	${LD} ${LDFLAGS} -o $@ $^ ${LDLIBS}
-
-${OBJECTS} : %.o: %.c
-	@echo "Compiling" $@ "from" $< "..."
-	${CC} ${CFLAGS} -o $@ -c $<
 
 .PHONY : all
 all : ${TARGET}
@@ -33,4 +28,5 @@ cleandep :
 	rm *.d
 
 # Include shared Makefile components
-include ../common/make.mk
+include ../common/config.mk
+include ../common/rules.mk
