@@ -33,8 +33,8 @@ p0, p1, p0p1 = 3, 8, 24
 # We are reducing mod (x^8 - 1)
 
 # Roots when multiplying in Z_17 [x] / (x^8 - 1)
-roots = [16, 4, 16, 2, 8, 4, 16]  # nth roots of unity
-roots_inv = [16, 13, 16, 9, 15, 13, 16]  # inverse nth roots of unity
+roots = [16, 4, 16, 2, 8, 4, 16]  # roots of unity
+roots_inv = [pow(_, -1, q) for _ in roots]  # inverse roots of unity
 
 # Setup Good's and NTT parameters
 goods = Goods(p0, p1, p0p1)
@@ -124,4 +124,6 @@ for i in range(p0p1 - 1, p - 1, -1):
 C = reduce_q(C_PAD, q)[:p]
 
 # 7x^10 + 7x^9 + 10x^8 + 15x^7 + 4x^6 + 10x^5 + 15x^4 + x^3 + x^2 + 14x + 9
+print(f"Calculating : Zx({A}) * Zx({B}) % (x^11 - x - 1) % 17")
+print(f"Produces    : {C}")
 print(f"The result is {C == [9, 14, 1, 1, 15, 10, 4, 15, 10, 7, 7]}")

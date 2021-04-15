@@ -33,5 +33,7 @@ C_F = [(a * b) % PRIMEQ for a, b in zip(A_F, B_F)]
 # Calculate the inverse NTT of polynomial C_F
 C = ntt.inverse(C_F)
 
+# 16*x^7 + 8*x^6 + 7*x^4 + 6*x
 print(f"Calculating : Zx({A}) * Zx({B}) % (x^8 + 1) % 17")
 print(f"Produces    : {C}")
+print(f"This result is {C == [0, 6, 0, 0, 7, 0, 8, 16]}")
