@@ -2,7 +2,6 @@
 
 import math
 from typing import List
-from typing import NoReturn
 
 from common import Goods
 from common import NTT
@@ -51,117 +50,21 @@ roots_inv = [1, 1, 13, 1, 13, 9, 15]
 goods = Goods(p0, p1, p0p1)
 ntt = NTT(q, p1, roots, roots_inv)
 
-" ------------------------------ "
-
-
-def forward_layer_1(cvec: Vector, k: int) -> NoReturn:
-    length = 4
-    idx, zeta = 0, roots[k]
-
-    for idx in range(length):
-        temp = zeta * cvec[idx + length]
-        cvec[idx + length] = cvec[idx] - temp  # The right halve
-        cvec[idx] = cvec[idx] + temp  # The left halve
-
-
-def forward_layer_2(cvec: Vector, k: int) -> NoReturn:
-    length, start = 2, 0
-
-    while start < N:
-        idx, zeta, k = start, roots[k], k + 1
-
-        while idx < (start + length):
-            temp = zeta * cvec[idx + length]
-            cvec[idx + length] = cvec[idx] - temp  # The right halve
-            cvec[idx] = cvec[idx] + temp  # The left halve
-
-            idx += 1
-
-        start = idx + length
-
-
-def forward_layer_3(cvec: Vector, k: int) -> NoReturn:
-    length, start = 1, 0
-
-    while start < N:
-        idx, zeta, k = start, roots[k], k + 1
-
-        while idx < (start + length):
-            temp = zeta * cvec[idx + length]
-            cvec[idx + length] = cvec[idx] - temp  # The right halve
-            cvec[idx] = cvec[idx] + temp  # The left halve
-
-            idx += 1
-
-        start = idx + length
-
-
-"""
-The following three functions define the per-layer inverse NTT transform.
-These should be applied synchronous to the forward functions. For example
-forward 1, forward 2, forward 3, should be matched with inverse 3, inverse 2,
-inverse 1. The result is then to be multiplied with the accumulated 2^-l factor
-"""
-
-
-def inverse_layer_3(cvec: Vector, k: int) -> NoReturn:
-    length, start = 1, 0
-
-    while start < N:
-        idx, zeta, k = start, roots_inv[k], k + 1
-
-        while idx < (start + length):
-            temp = cvec[idx]
-            cvec[idx] = (temp + cvec[idx + length])
-            cvec[idx + length] = temp - cvec[idx + length]
-            cvec[idx + length] *= zeta
-
-            idx += 1
-
-        start = idx + length
-
-
-def inverse_layer_2(cvec: Vector, k: int) -> NoReturn:
-    length, start = 2, 0
-
-    while start < N:
-        idx, zeta, k = start, roots_inv[k], k + 1
-
-        while idx < (start + length):
-            temp = cvec[idx]
-            cvec[idx] = (temp + cvec[idx + length])
-            cvec[idx + length] = temp - cvec[idx + length]
-            cvec[idx + length] *= zeta
-
-            idx += 1
-
-        start = idx + length
-
-
-def inverse_layer_1(cvec: Vector, k: int) -> NoReturn:
-    length = 4
-    idx, zeta = 0, roots_inv[k]
-
-    for idx in range(length):
-        temp = cvec[idx]
-        cvec[idx] = (temp + cvec[idx + length])
-        cvec[idx + length] = temp - cvec[idx + length]
-        cvec[idx + length] *= zeta
-
-        idx += 1
-
 
 def forward(cvec):
-    forward_layer_1(cvec, 0)
-    forward_layer_2(cvec, 1)
-    forward_layer_3(cvec, 3)
+    # forward_layer_1(cvec, 0)
+    # forward_layer_2(cvec, 1)
+    # forward_layer_3(cvec, 3)
+    ntt.forward_iti(cvec)
     return reduce_q(cvec, Q)
 
 
 def inverse(cvec):
-    inverse_layer_3(cvec, 3)
-    inverse_layer_2(cvec, 1)
-    inverse_layer_1(cvec, 0)
+    # inverse_layer_3(cvec, 3)
+    # inverse_layer_2(cvec, 1)
+    # inverse_layer_1(cvec, 0)
+
+    ntt.i_inverse(cvec)
 
     # Calculate the accumulated constant factor: 2^{-lay} mod Q
     # Multiply with this factor and reduce mod Q to obtain the inverse
@@ -169,8 +72,6 @@ def inverse(cvec):
     factor = pow(2, -lay, Q)  # this only works in Python3.8+
     return [(_ * factor) % Q for _ in cvec]
 
-
-" ------------------------------ "
 
 " -- Define polynomials A, B of size p "
 A = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]

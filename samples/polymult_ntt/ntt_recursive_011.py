@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
-from common import Goods
-from common import NTT
-from common import pad
-from common import reduce_q
+from lib_common import Goods
+from lib_common import NTT
+from lib_common import pad
+from lib_common import reduce_q
 
 """
 This script can be used to perform NTT based polynomial multiplication of two

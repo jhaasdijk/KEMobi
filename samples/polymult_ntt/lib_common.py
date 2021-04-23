@@ -81,10 +81,10 @@ class NTT:
         """ Class constructor used to initialize an instance of the class """
         self.q, self.p1, self.roots, self.roots_inv = q, p1, roots, roots_inv
 
-    def forward(self, cvec: Vector, ridx: int = 0) -> Vector:
+    def forward_rec(self, cvec: Vector, ridx: int = 0) -> Vector:
         """
         Calculate and return the forward NTT of a polynomial represented by its
-        coefficient vector
+        coefficient vector, recursively
         :param cvec: The coefficient vector
         :param ridx: Index used to point to the root of unity, default 0
         :return: The forward NTT transform (of the left and right halves)
@@ -102,8 +102,8 @@ class NTT:
             cvec_l = reduce_q(cvec_l, self.q)
             cvec_r = reduce_q(cvec_r, self.q)
 
-            return self.forward(cvec_l, ridx * 2 + 1) \
-                   + self.forward(cvec_r, ridx * 2 + 2)
+            return self.forward_rec(cvec_l, ridx * 2 + 1) \
+                   + self.forward_rec(cvec_r, ridx * 2 + 2)
 
     def inverse_butterfly(self, cvec: Vector, ridx: int = 0) -> Vector:
         """
@@ -128,10 +128,10 @@ class NTT:
 
             return rvec
 
-    def inverse(self, cvec: Vector) -> Vector:
+    def inverse_rec(self, cvec: Vector) -> Vector:
         """
         Calculate and return the inverse NTT of a polynomial represented by
-        its coefficient vector
+        its coefficient vector, recursively
         :param cvec: The coefficient vector
         :return: The complete inverse NTT transform
         """
@@ -141,6 +141,102 @@ class NTT:
         factor = pow(2, -lay, self.q)  # this only works in Python3.8+
 
         inverse_butterfly = self.inverse_butterfly(cvec)
-        rvec = list(map(lambda x: (x * factor) % self.q, inverse_butterfly))
+        rvec = [(_ * factor) % self.q for _ in inverse_butterfly]
 
         return rvec
+
+    def forward_iti(self, cvec: Vector, k: int = 0) -> NoReturn:
+        """
+        Calculate and return the forward NTT of a polynomial represented by
+        its coefficient vector, iteratively - inplace
+        :param cvec: The coefficient vector
+        :param k: Index used to point to the root of unity, default 0
+        :return: The forward NTT transform
+        """
+
+        # This needs an explicit cast to int as we are going to use the
+        # variable length as an index
+        len = int(self.p1 / 2)
+
+        # Loop as long as there are layers - chunks to split
+        while len >= 1:
+
+            start = 0
+            while start < self.p1:
+
+                zeta, k = self.roots[k], k + 1
+                j = start
+
+                # Loop over the split chunks
+                # The variable len defines the size / layer we are at
+                while j < (start + len):
+                    t = zeta * cvec[j + len]
+                    # Don't swap around the order of the next two instructions
+                    cvec[j + len] = cvec[j] - t  # the upper half
+                    cvec[j] = cvec[j] + t  # the lower half
+                    j += 1
+
+                start = j + len
+
+            # This needs an explicit cast to int as we are using the variable
+            # length as an index
+            len = int(len / 2)
+
+        # Reduce the integer coefficients inplace
+        for _ in range(self.p1):
+            cvec[_] %= self.q
+
+    def inverse_iti(self, cvec: Vector, k: int = 0) -> NoReturn:
+        """
+        Calculate and return the forward NTT of a polynomial represented by its
+        coefficient vector, iteratively - inplace
+        :param cvec: The coefficient vector
+        :param k: Index used to point to the root of unity, default 0
+        :return: The forward NTT transform
+        """
+
+        # This needs an explicit cast to int as we are going to use the
+        # variable length as an index
+        len = 1
+
+        # TODO : This has been updated in calc_roots.sage - reorder
+        #  Please update the roots accordingly. Use k: int = 0 in the
+        #  function header and iterate over k -> k+1 -> k+2 similarly as how
+        #  this is done in forward_iti()
+
+        # TODO : Since this function now also does the factor multiply we
+        #  need to remove this bit from everywhere we called this separately
+        #  before
+
+        # FIXED: It might be better to reorder the roots_inv vector than it
+        #  is to jump through it here, essentially doing the reordering step
+        #  here. It's easier to reorder it externally. So instead of having
+        #  the roots with indices [0, 1, 2, 3, 4, 5, 6] we would want them to
+        #  be [3, 4, 5, 6, 1, 2, 0]
+
+        # Loop as long as there are layers - chunks to split
+        while len <= int(self.p1 / 2):
+
+            start = 0
+            while start < self.p1:
+
+                idx, zeta, k = start, self.roots_inv[k], k + 1
+
+                while idx < (start + len):
+                    temp = cvec[idx]
+                    cvec[idx] = (temp + cvec[idx + len])
+                    cvec[idx + len] = temp - cvec[idx + len]
+                    cvec[idx + len] *= zeta
+
+                    idx += 1
+
+                start = idx + len
+
+            len = len * 2
+
+        # Calculate the accumulated constant factor: 2^{-lay} mod Q
+        # Multiply with this factor and reduce mod Q to obtain the inverse
+        lay = int(math.log2(self.p1))  # needs explicit conversion to integer
+        factor = pow(2, -lay, self.q)  # this only works in Python3.8+
+        for _ in range(self.p1):
+            cvec[_] = (cvec[_] * factor) % self.q

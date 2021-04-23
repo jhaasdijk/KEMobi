@@ -54,3 +54,4 @@ dkms.conf
 # Custom
 *.idea
 **/__pycache__
+*.sage.py

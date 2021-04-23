@@ -3,52 +3,37 @@ from typing import List
 from typing import NoReturn
 
 from common import NTT
+from common import reduce_q
 
 """
-This script is for testing the forward and inverse NTT transformation. 
-Depending on whether its a cyclic or negacyclic NTT the roots need to change.
+This script can be used to test the forward and inverse NTT transformation. 
+The (inverse) NTT transformation has been separated per layer which makes it 
+very easy to inspect and debug intermediate results.
 """
 
 # Define type alias for coefficient vectors
 Vector = List[int]
 
 # We are calculating inplace so we need to make a copy if we somewhere want to
-# do something with the original coefficient vector
+# do something with the original coefficient vectors
 A = [2, 0, 0, 7, 2, 0, 0, 7]
 B = [6, 0, 2, 0, 6, 0, 2, 0]
 original_A = A.copy()
 original_B = B.copy()
 
-# Define the global parameters
+# Define the NTT parameters
 Q, N = 17, 8
 
-# TODO : Uncomment this for a cyclic NTT
-#      : Use roots_cyclic.sage to calculate new values
-# For a size-8 cyclic NTT, i.e. multiplying in Z_17 [x] / (x^8 - 1):
-# roots = [16, 4, 16, 2, 8, 4, 16]  # roots of unity
-# roots_inv = [pow(_, -1, Q) for _ in roots]  # inverse roots of unity
-# TODO : These roots have been generated
-# roots=[1, 1, 4, 1, 4, 2, 8]
-# roots_inv=[1, 1, 13, 1, 13, 9, 15]
+# These are the roots for a size-8 cyclic NTT, i.e. we are multiplying
+# polynomials A and B in Z_17 [x] / (x^8 - 1). Remember that the inverse
+# roots have been reordered
+roots = [1, 1, 4, 1, 4, 2, 8]
+roots_inv = [1, 13, 9, 15, 1, 13, 1]
 
-# TODO : Uncomment this for a negacyclic NTT
-#      : Use roots_negacyclic.sage to calculate new values
-# For a size-8 negacyclic NTT, i.e. multiplying in Z_17 [x] / (x^8 + 1):
-# roots = [4, 2, 8, 6, 10, 5, 3]  # roots of unity
-# roots_inv = [13, 9, 15, 3, 12, 7, 6]  # inverse roots of unity
-# TODO : These roots have been generated
-roots = [13, 9, 15, 3, 5, 10, 11]
-roots_inv = [4, 2, 8, 6, 7, 12, 14]
+# TODO include the actual roots
 
-
-def reduce_q(cvec: Vector, q: int) -> Vector:
-    """
-    Reduce the integer coefficients of a coefficient vector with a modulus
-    :param cvec: The coefficient vector
-    :param q: The modulus
-    :return: Coefficient vector with coefficients mod q
-    """
-    return list(map(lambda x: x % q, cvec))
+# TODO This file contains the only example with separated layers. Create a
+#  special example from this in ../
 
 
 """
@@ -100,9 +85,10 @@ def forward_layer_3(cvec: Vector, k: int) -> NoReturn:
 
 """
 The following three functions define the per-layer inverse NTT transform. 
-These should be applied synchronous to the forward functions. For example 
+These should be applied asymmetrical to the forward functions. For example 
 forward 1, forward 2, forward 3, should be matched with inverse 3, inverse 2,
-inverse 1. The result is then to be multiplied with the accumulated 2^-l factor
+inverse 1. The final layer includes the multiplication with the accumulated 
+2^-l factor
 """
 
 
@@ -152,71 +138,57 @@ def inverse_layer_1(cvec: Vector, k: int) -> NoReturn:
 
         idx += 1
 
-
-def forward(cvec):
-    forward_layer_1(cvec, 0)
-    forward_layer_2(cvec, 1)
-    forward_layer_3(cvec, 3)
-    return reduce_q(cvec, Q)
-
-
-def inverse(cvec):
-    inverse_layer_3(cvec, 3)
-    inverse_layer_2(cvec, 1)
-    inverse_layer_1(cvec, 0)
-
     # Calculate the accumulated constant factor: 2^{-lay} mod Q
     # Multiply with this factor and reduce mod Q to obtain the inverse
     lay = int(math.log2(N))  # needs explicit conversion to integer
     factor = pow(2, -lay, Q)  # this only works in Python3.8+
-    return [(_ * factor) % Q for _ in cvec]
+
+    for _ in range(N):
+        cvec[_] = (cvec[_] * factor) % Q
 
 
-# Forward NTT transform of A
-forward_A = forward(A)
-# Forward NTT transform of B
-forward_B = forward(B)
+# Calculate the forward NTT transform of A
+forward_layer_1(A, 0)
+forward_layer_2(A, 1)
+forward_layer_3(A, 3)
+A = reduce_q(A, Q)
 
-# Some debug printing for testing some known values
-print("> Forward NTT transformation of A")
-print(f"{original_A = }")
-print(f"{forward_A  = }")
+# Calculate the forward NTT transform of B
+forward_layer_1(B, 0)
+forward_layer_2(B, 1)
+forward_layer_3(B, 3)
+B = reduce_q(B, Q)
 
 ntt = NTT(Q, N, roots, roots_inv)
-if forward_A == ntt.forward(original_A):
+if A == ntt.forward_rec(original_A):
     print("> This is \\ identical \\ to the recursive variant")
 else:
     print("> This is \\ different \\ from the recursive variant")
 
-if forward_A == [0, 0, 0, 0, 16, 9, 7, 1]:
+if A == [0, 0, 0, 0, 16, 9, 7, 1]:
     print("> This is the expected result for a size-8 \\ cyclic \\ NTT")
-elif forward_A == [5, 15, 7, 13, 4, 1, 5, 0]:
+elif A == [5, 15, 7, 13, 4, 1, 5, 0]:
     print("> This is the expected result for a size-8 \\ negacyclic \\ NTT")
 else:
     print("> This result was \\ unexpected \\ for the predefined roots")
     print("> Did you perhaps try different roots?")
 
 # Multiplying the elements of A and B into C
-forward_C = [(a * b) % Q for a, b in zip(forward_A, forward_B)]
+C = [(a * b) % Q for a, b in zip(A, B)]
 
-# Testing that the NTT symmetry holds
-inverse_A = inverse(forward_A)
-print()
-print("> Testing symmetry")
-print("> Inverse NTT transformation")
-print(f"{inverse_A  = }")
-print(f"{inverse_A == original_A = }")
+# Calculate the inverse NTT transform of C
+inverse_layer_3(C, 0)
+inverse_layer_2(C, 1)
+inverse_layer_1(C, 3)
 
-# Calculating inverse NTT transform of forward_C
-inverse_C = inverse(forward_C)
 print()
-print("> Multiplying A and B in Z_17 [x] / (x^8 +- 1)")
+print("> Multiplying A and B in Z_17 [x] / (x^8 - 1)")
 print(f"Zx({original_A}) * Zx({original_B}) % (x^8 +- 1) % 17")
-print(f"Produces {inverse_C = }")
+print(f"Produces {C = }")
 
-if inverse_C == [7, 11, 8, 16, 7, 11, 8, 16]:
+if C == [7, 11, 8, 16, 7, 11, 8, 16]:
     print("> This is the expected result for a size-8 \\ cyclic \\ NTT")
-elif inverse_C == [0, 6, 0, 0, 7, 0, 8, 16]:
+elif C == [0, 6, 0, 0, 7, 0, 8, 16]:
     print("> This is the expected result for a size-8 \\ negacyclic \\ NTT")
 else:
     print("> This result was \\ unexpected \\")

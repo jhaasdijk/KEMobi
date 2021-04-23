@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from common import NTT
+from lib_common import NTT
 
 """
 This script can be used for multiplying two polynomials using NTT based
