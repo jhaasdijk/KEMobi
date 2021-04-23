@@ -2,20 +2,29 @@ import math
 from typing import List
 from typing import NoReturn
 
+"""
+This file is used to contain various helper functions and classes. It is not
+meant to be executed by itself (it will not execute anything) but can be
+called from other scripts. It contains shared components which can be reused
+throughout the repository. Please refer to the specific class or function for
+more details. Every class and function has been documented with an extensive
+docstring and annotated with type hints
+"""
+
 # Define type alias for coefficient vectors and Good's matrices
 Vector = List[int]
 Matrix = List[List[int]]
 
 
-def pad(cvec: Vector, p0p1: int) -> Vector:
+def pad(cvec: Vector, size: int) -> Vector:
     """
     Zero pad a coefficient vector to the specified size
     :param cvec: The coefficient vector
-    :param p0p1: The specified size
-    :return: Zero padded size-p0p1 coefficient vector
+    :param size: The specified size
+    :return: Zero padded coefficient vector
     """
-    assert len(cvec) <= p0p1
-    return cvec + [0 for _ in range(p0p1 - len(cvec))]
+    assert len(cvec) <= size
+    return cvec + [0 for _ in range(size - len(cvec))]
 
 
 def reduce_q(cvec: Vector, q: int) -> Vector:
@@ -25,10 +34,18 @@ def reduce_q(cvec: Vector, q: int) -> Vector:
     :param q: The modulus
     :return: Coefficient vector with coefficients mod q
     """
-    return list(map(lambda x: x % q, cvec))
+    return [_ % q for _ in cvec]
 
 
 class Goods:
+    """
+    The class Goods can be used for calculating the forward and inverse
+    Good's permutation. Good's permutation allows you to deconstruct a size
+    (p0 * p1^k) NTT as a combination of p0 size - p1^k NTTs, with p0 and p1
+    being small prime numbers. This explains the variable naming. p0 and p1
+    represent the prime numbers, p0p1 represents their multiplication. For
+    example when p0=3, p1=2 and k=3, p0p1=24. Usually we use p1^k as p1
+    """
 
     def __init__(self, p0: int, p1: int, p0p1: int) -> NoReturn:
         """ Class constructor used to initialize an instance of the class """
@@ -36,18 +53,18 @@ class Goods:
 
     def forward(self, cvec: Vector) -> Matrix:
         """
-        Perform the forward Good's permutation on a size-p0p1 coefficient
+        Perform the forward Good's permutation on a size - p0p1 coefficient
         vector to obtain a p0 by p1 matrix
-        :param cvec: The size-p0p1 coefficient vector
-        :return: Matrix containing p0 size-p1 coefficient vectors
+        :param cvec: The size - p0p1 coefficient vector
+        :return: Matrix containing p0 size - p1 coefficient vectors
         """
         assert len(cvec) == self.p0p1
         rvec = [[0 for _ in range(self.p1)] for _ in range(self.p0)]
 
         for idx in range(self.p0p1):
-            # determine in which size-p1 NTT the coefficient ends up
+            # Determine in which size - p1 NTT the coefficient ends up
             ntt = idx % self.p0
-            # determine which size-p1 NTT coefficient is used
+            # Determine which size - p1 NTT coefficient is used
             coef = idx % self.p1
             rvec[ntt][coef] = cvec[idx]
 
@@ -56,18 +73,18 @@ class Goods:
     def inverse(self, rvec: Matrix) -> Vector:
         """
         Perform the inverse Good's permutation (undo) on a p0 by p1 matrix to
-        obtain a size-p0p1 coefficient vector
-        :param rvec: Matrix containing p0 size-p1 coefficient vectors
-        :return: The size-p0p1 coefficient vector
+        obtain a size - p0p1 coefficient vector
+        :param rvec: Matrix containing p0 size - p1 coefficient vectors
+        :return: The size - p0p1 coefficient vector
         """
         assert len(rvec) == self.p0
         assert len(rvec[0]) == self.p1
         cvec = [0 for _ in range(self.p0p1)]
 
         for idx in range(self.p0p1):
-            # determine in which size-p1 NTT the coefficient has ended up
+            # Determine in which size - p1 NTT the coefficient has ended up
             ntt = idx % self.p0
-            # determine which size-p1 NTT coefficient was used
+            # Determine which size - p1 NTT coefficient was used
             coef = idx % self.p1
             cvec[idx] = rvec[ntt][coef]
 
@@ -75,11 +92,22 @@ class Goods:
 
 
 class NTT:
+    """
+    The class NTT can be used to calculate the forward and inverse Number
+    Theoretic Transform (NTT) on polynomials represented by their coefficient
+    vector. Use the _rec or _iti postfix functions for either a recursive or
+    iterative inplace variant respectively. We need four ingredients in this
+    calculation. The modulus of the ring of integers (q), the size of a
+    coefficient vector (n), the roots of unity (roots) and the inverse roots
+    of unity (roots_inv). The roots are also sometimes referred to as twiddle
+    factors. Please refer to lib_roots.sage for more information regarding
+    the roots, inverse roots and their assumed order
+    """
 
-    def __init__(self, q: int, p1: int, roots: Vector,
+    def __init__(self, q: int, n: int, roots: Vector,
                  roots_inv: Vector) -> NoReturn:
         """ Class constructor used to initialize an instance of the class """
-        self.q, self.p1, self.roots, self.roots_inv = q, p1, roots, roots_inv
+        self.q, self.n, self.roots, self.roots_inv = q, n, roots, roots_inv
 
     def forward_rec(self, cvec: Vector, ridx: int = 0) -> Vector:
         """
@@ -95,9 +123,10 @@ class NTT:
             half = math.floor(len(cvec) / 2)
             cvec_l, cvec_r = [0 for _ in range(half)], [0 for _ in range(half)]
 
-            for idx in range(half):
-                cvec_l[idx] = cvec[idx] + self.roots[ridx] * cvec[idx + half]
-                cvec_r[idx] = cvec[idx] - self.roots[ridx] * cvec[idx + half]
+            for _ in range(half):
+                mul = self.roots[ridx] * cvec[_ + half]
+                cvec_l[_] = cvec[_] + mul
+                cvec_r[_] = cvec[_] - mul
 
             cvec_l = reduce_q(cvec_l, self.q)
             cvec_r = reduce_q(cvec_r, self.q)
@@ -108,7 +137,7 @@ class NTT:
     def inverse_butterfly(self, cvec: Vector, ridx: int = 0) -> Vector:
         """
         Calculate and return the inverse NTT butterfly of a polynomial
-        represented by its coefficient vector
+        represented by its coefficient vector, recursively
         :param cvec: The coefficient vector
         :param ridx: Index used to point to the inverse root of unity, default 0
         :return: The (butterfly) inverse NTT transform
@@ -120,11 +149,10 @@ class NTT:
             cvec_l = self.inverse_butterfly(cvec[:half], ridx * 2 + 1)
             cvec_r = self.inverse_butterfly(cvec[half:], ridx * 2 + 2)
 
-            rvec = [0 for _ in range(self.p1)]
-            for idx in range(half):
-                rvec[idx] = cvec_l[idx] + cvec_r[idx]
-                rvec[idx + half] = (cvec_l[idx] - cvec_r[idx]) \
-                                   * self.roots_inv[ridx]
+            rvec = [0 for _ in range(self.n)]
+            for _ in range(half):
+                rvec[_] = cvec_l[_] + cvec_r[_]
+                rvec[_ + half] = (cvec_l[_] - cvec_r[_]) * self.roots_inv[ridx]
 
             return rvec
 
@@ -135,108 +163,101 @@ class NTT:
         :param cvec: The coefficient vector
         :return: The complete inverse NTT transform
         """
-
         # Calculate the accumulated constant factor: 2^{-lay} mod q
-        lay = int(math.log2(self.p1))  # needs explicit conversion to integer
-        factor = pow(2, -lay, self.q)  # this only works in Python3.8+
+        lay = int(math.log2(self.n))  # Needs explicit conversion to integer
+        factor = pow(2, -lay, self.q)  # This only works in Python3.8+
 
-        inverse_butterfly = self.inverse_butterfly(cvec)
-        rvec = [(_ * factor) % self.q for _ in inverse_butterfly]
+        # Calculate inverse butterfly and multiply with the accumulated factor
+        rvec = self.inverse_butterfly(cvec)
+        return [(_ * factor) % self.q for _ in rvec]
 
-        return rvec
-
-    def forward_iti(self, cvec: Vector, k: int = 0) -> NoReturn:
+    def forward_iti(self, cvec: Vector, ridx: int = 0) -> NoReturn:
         """
         Calculate and return the forward NTT of a polynomial represented by
         its coefficient vector, iteratively - inplace
         :param cvec: The coefficient vector
-        :param k: Index used to point to the root of unity, default 0
-        :return: The forward NTT transform
+        :param ridx: Index used to point to the root of unity, default 0
         """
-
         # This needs an explicit cast to int as we are going to use the
-        # variable length as an index
-        len = int(self.p1 / 2)
+        # variable length as an index. The variable length defines the size
+        # of the polynomials, and thus the layer we are currently at
+        length = int(self.n / 2)
 
-        # Loop as long as there are layers - chunks to split
-        while len >= 1:
+        # Loop as long as there are layers - polynomials to split
+        while length >= 1:
 
+            # Define a variable for keeping the offset for the (next) chunk.
+            # Start is used to jump to the various smaller parts within the
+            # coefficient vector
             start = 0
-            while start < self.p1:
 
-                zeta, k = self.roots[k], k + 1
-                j = start
+            # Loop as long as there are polynomials in the current layer
+            while start < self.n:
 
-                # Loop over the split chunks
-                # The variable len defines the size / layer we are at
-                while j < (start + len):
-                    t = zeta * cvec[j + len]
+                # Obtain the root(s) for the current layer
+                zeta, ridx = self.roots[ridx], ridx + 1
+
+                # Start reading from the current offset. Read and split the
+                # polynomial, i.e. perform the forward butterfly
+                for _ in range(start, start + length):
+                    temp = zeta * cvec[_ + length]
                     # Don't swap around the order of the next two instructions
-                    cvec[j + len] = cvec[j] - t  # the upper half
-                    cvec[j] = cvec[j] + t  # the lower half
-                    j += 1
+                    cvec[_ + length] = cvec[_] - temp  # the upper half
+                    cvec[_] = cvec[_] + temp  # the lower half
 
-                start = j + len
+                start += 2 * length
 
             # This needs an explicit cast to int as we are using the variable
             # length as an index
-            len = int(len / 2)
+            length = int(length / 2)
 
-        # Reduce the integer coefficients inplace
-        for _ in range(self.p1):
-            cvec[_] %= self.q
+        # Reduce the integer coefficients inplace. This (mis)uses the Python
+        # slicing operator ':' to overwrite the entire list '[:]' with a list
+        # comprehension in which every element is reduced mod q
+        cvec[:] = [_ % self.q for _ in cvec]
 
-    def inverse_iti(self, cvec: Vector, k: int = 0) -> NoReturn:
+    def inverse_iti(self, cvec: Vector, ridx: int = 0) -> NoReturn:
         """
-        Calculate and return the forward NTT of a polynomial represented by its
-        coefficient vector, iteratively - inplace
+        Calculate and return the inverse NTT of a polynomial represented by its
+        coefficient vector, iteratively - inplace. Please be aware that while
+        the recursive inverse transformation elegantly jumps over the inverse
+        roots, this iterative inverse transformation assumes the inverse
+        roots have been reordered. Please refer to lib_roots.sage for details
         :param cvec: The coefficient vector
-        :param k: Index used to point to the root of unity, default 0
-        :return: The forward NTT transform
+        :param ridx: Index used to point to the root of unity, default 0
         """
+        # The variable length defines the size of the polynomials, and thus the
+        # layer we are currently at
+        length = 1
 
-        # This needs an explicit cast to int as we are going to use the
-        # variable length as an index
-        len = 1
+        # Loop as long as there are layers - polynomials to combine
+        while length <= int(self.n / 2):
 
-        # TODO : This has been updated in calc_roots.sage - reorder
-        #  Please update the roots accordingly. Use k: int = 0 in the
-        #  function header and iterate over k -> k+1 -> k+2 similarly as how
-        #  this is done in forward_iti()
-
-        # TODO : Since this function now also does the factor multiply we
-        #  need to remove this bit from everywhere we called this separately
-        #  before
-
-        # FIXED: It might be better to reorder the roots_inv vector than it
-        #  is to jump through it here, essentially doing the reordering step
-        #  here. It's easier to reorder it externally. So instead of having
-        #  the roots with indices [0, 1, 2, 3, 4, 5, 6] we would want them to
-        #  be [3, 4, 5, 6, 1, 2, 0]
-
-        # Loop as long as there are layers - chunks to split
-        while len <= int(self.p1 / 2):
-
+            # Define a variable for keeping the offset for the (next) chunk.
+            # Start is used to jump to the various smaller parts within the
+            # coefficient vector
             start = 0
-            while start < self.p1:
 
-                idx, zeta, k = start, self.roots_inv[k], k + 1
+            # Loop as long as there are polynomials in the current layer
+            while start < self.n:
 
-                while idx < (start + len):
-                    temp = cvec[idx]
-                    cvec[idx] = (temp + cvec[idx + len])
-                    cvec[idx + len] = temp - cvec[idx + len]
-                    cvec[idx + len] *= zeta
+                # Obtain the root(s) for the current layer
+                zeta, ridx = self.roots_inv[ridx], ridx + 1
 
-                    idx += 1
+                # Start reading from the current offset. Read and combine the
+                # polynomial, i.e. perform the inverse butterfly
+                for _ in range(start, start + length):
+                    temp = cvec[_]
+                    cvec[_] = (temp + cvec[_ + length])
+                    cvec[_ + length] = temp - cvec[_ + length]
+                    cvec[_ + length] *= zeta
 
-                start = idx + len
+                start += 2 * length
 
-            len = len * 2
+            length = length * 2
 
-        # Calculate the accumulated constant factor: 2^{-lay} mod Q
-        # Multiply with this factor and reduce mod Q to obtain the inverse
-        lay = int(math.log2(self.p1))  # needs explicit conversion to integer
-        factor = pow(2, -lay, self.q)  # this only works in Python3.8+
-        for _ in range(self.p1):
-            cvec[_] = (cvec[_] * factor) % self.q
+        # Calculate the accumulated constant factor: 2^{-lay} mod q
+        # Multiply with this factor and reduce mod q to obtain the result
+        lay = int(math.log2(self.n))  # Needs explicit conversion to integer
+        factor = pow(2, -lay, self.q)  # This only works in Python3.8+
+        cvec[:] = [(_ * factor) % self.q for _ in cvec]

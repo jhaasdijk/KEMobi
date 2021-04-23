@@ -3,11 +3,11 @@
 import random
 import unittest
 
-from common import Goods
-from common import pad
+from lib_common import Goods
+from lib_common import pad
 
-p, q = 11, 17  # Define the original (p, q) parameters
-p0, p1, p0p1 = 3, 8, 24  # Define NTT 'suitable' (p0, p1, p0p1) parameters
+VAR_Q, VAR_P = 17, 11  # Define the original parameters
+p0, p1, p0p1 = 3, 8, 24  # Define NTT 'suitable' parameters
 
 
 class TestGoods(unittest.TestCase):
@@ -17,8 +17,8 @@ class TestGoods(unittest.TestCase):
     def setUpClass(cls):
         """ setUpClass is used to define objects for the whole class """
 
-        # Define a random polynomial A of size p and zero pad to size p0p1
-        cls.A = pad([random.randint(0, q - 1) for _ in range(p)], p0p1)
+        # Define a random polynomial A of size VAR_P and zero pad to size p0p1
+        cls.A = pad([random.randint(0, VAR_Q - 1) for _ in range(VAR_P)], p0p1)
 
         # Define an object to interact with the implemented Good's methods
         cls.goods = Goods(p0, p1, p0p1)
