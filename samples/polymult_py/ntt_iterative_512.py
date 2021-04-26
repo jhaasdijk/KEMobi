@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
 import random
-from typing import List
 
 from lib_common import NTT
-
-Vector = List[int]
 
 # Declare and assign 'suitable' NTT parameters
 VAR_Q, VAR_N = 6984193, 512
@@ -18,9 +15,11 @@ roots_inv = [1, 5095483, 5794754, 4734275, 1472661, 4352361, 2161414, 4509332, 3
 
 ntt = NTT(VAR_Q, VAR_N, roots, roots_inv)
 
-# Generate two random polynomials A, B
-A = [random.randint(1, VAR_Q) for _ in range(VAR_N)]
-B = [random.randint(1, VAR_Q) for _ in range(VAR_N)]
+# Generate two random polynomials A, B. The method randint returns a random
+# integer in the range [a, b] - including both endpoints. We generate random
+# integers in the range [0, VAR_Q - 1]
+A = [random.randint(0, VAR_Q - 1) for _ in range(VAR_N)]
+B = [random.randint(0, VAR_Q - 1) for _ in range(VAR_N)]
 
 # Save the originals for later (remember, we are calculating our values inplace)
 originalA = A.copy()

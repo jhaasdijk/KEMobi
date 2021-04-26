@@ -78,7 +78,7 @@ C_PAD_G_F = [[0 for _ in range(p1)] for _ in range(p0)]
 for i in range(p1):
 
     # define an accumulator to store temporary values
-    accum = [0 for _ in range(2 * p0)]
+    accum = [0 for _ in range(2 * p0 - 1)]
 
     # obtain two degree 2 polynomials from A, B
     poly_a = [A_PAD_G_F[0][i], A_PAD_G_F[1][i], A_PAD_G_F[2][i]]
@@ -90,13 +90,12 @@ for i in range(p1):
             accum[n + m] += poly_a[n] * poly_b[m]
 
     # reduce mod (x^3 - 1)
-    for ix in range(2 * p0 - 1, p0 - 1, -1):
+    for ix in range(2 * p0 - 2, p0 - 1, -1):
         if accum[ix] > 0:  # x^p is nonzero
             accum[ix - p0] += accum[ix]  # add x^p into x^0
             accum[ix] = 0  # zero x^p
 
     # store the result
-    accum = reduce_q(accum, VAR_Q)
     C_PAD_G_F[0][i] = accum[0]
     C_PAD_G_F[1][i] = accum[1]
     C_PAD_G_F[2][i] = accum[2]

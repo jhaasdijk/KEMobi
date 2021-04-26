@@ -6,8 +6,11 @@ import unittest
 from lib_common import Goods
 from lib_common import pad
 
-VAR_Q, VAR_P = 17, 11  # Define the original parameters
-p0, p1, p0p1 = 3, 8, 24  # Define NTT 'suitable' parameters
+# Define the original parameters
+VAR_Q, VAR_P = 4591, 761
+
+# Define NTT 'suitable' parameters
+p0, p1, p0p1 = 3, 512, 1536
 
 
 class TestGoods(unittest.TestCase):
