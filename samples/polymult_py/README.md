@@ -37,3 +37,13 @@ that there is no module named 'lib_common'.
 ```bash
   ModuleNotFoundError: No module named 'lib_common'
 ```
+
+## TODO
+
+- [ ] It would be cleaner to package the Python sources in this directory as a
+  standalone module. We could then improve readability by moving the sources
+  into three separate folders (`lib`, `tests` and `ntt`).
+
+- [ ] It would be better to move some of the `ntt_` examples as a test under
+  `./tests` and only keep the ones that showcase a different approach in `ntt_`
+
