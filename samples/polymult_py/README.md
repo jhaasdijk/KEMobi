@@ -45,5 +45,7 @@ that there is no module named 'lib_common'.
   into three separate folders (`lib`, `tests` and `ntt`).
 
 - [ ] It would be better to move some of the `ntt_` examples as a test under
-  `./tests` and only keep the ones that showcase a different approach in `ntt_`
+  `./tests` and only keep the ones that showcase a different approach in `ntt_`.
+  This would greatly de-clutter the repository while simultaneously improving
+  its reliability.
 
