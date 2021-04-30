@@ -1,5 +1,5 @@
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef SIZE008_H
+#define SIZE008_H
 
 #include <stdint.h>
 #include <stdio.h>
