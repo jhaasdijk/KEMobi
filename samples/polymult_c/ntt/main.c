@@ -1,50 +1,41 @@
-#include <stdint.h>
-#include <stdio.h>
+#include "main.h"
 
-#define VAR_P 8
-#define VAR_Q 17
+/*
+ * Instead of defining a custom type for representing polynomials, each
+ * polynomial is represented using an array of its integer coefficients. For
+ * instance {1, 2, 3} represents the polynomial 3x^2 + 2x + 1. Each
+ * coefficient is represented as an unsigned 32 bit integer (uint32_t). This
+ * makes it easier to identify and use numeric types properly instead of
+ * hiding what types are being used under the hood.
+ */
 
 /*
  * TODO : Make sure that numeric types are large enough to contain the result
- *
- * TODO : ^ Check this for the point wise multiplication, and any other
- *  multiplications that occur during the NTT transformation
- *
- * TODO : Recheck and possibly rewrite (or explain) why we have a custom mod
- *  function
- *
- * TODO : Maybe we can force a specific width when printing numeric values
- *  such that when comparing them top of each other its easier
- *
- * TODO : Rethink whether we want to work with struct polynomial. It might be
- *  simpler to just work with arrays everywhere
  */
 
 /**
- * Define a custom struct for representing polynomials. Each polynomial is
- * represented using a vector of its coefficients, e.g. {1, 2, 3} represents
- * the polynomial 3x^2 + 2x + 1. Each coefficient is represented by an
- * unsigned 32 bit integer.
+ * This function can be used to print a polynomial that is represented by a
+ * array of its coefficients to stdout. Numeric values are printed with a
+ * specified column width of 2. This makes it easier to compare output of
+ * different runs.
+ *
+ * @param coefficients An array of integer coefficients (i.e. a polynomial)
  */
-struct polynomial
+void print_polynomial(uint32_t *coefficients)
 {
-    uint32_t coefficients[VAR_P];
-};
-
-/**
- * These are the roots for a size - 8 cyclic NTT, i.e. we are multiplying two
- * polynomials in Z_17 [x] / (x^8 - 1). Remember that the inverse roots have
- * been reordered since we are using an iterative approach.
- */
-const uint32_t roots[] = {1, 1, 4, 1, 4, 2, 8};
-const uint32_t roots_inv[] = {1, 13, 9, 15, 1, 13, 1};
+    for (size_t i = 0; i < VAR_P; i++)
+    {
+        printf(" %*d", 2, coefficients[i]);
+    }
+    printf("\n");
+}
 
 /**
  * Define a custom modulo operator that calculates the remainder after
  * Euclidean division. This snippet has been taken from
- * https://stackoverflow.com/questions/11720656/
+ * https://stackoverflow.com/a/52529440
  */
-int mod(int a, int b)
+int modulo(int a, int b)
 {
     int m = a % b;
     if (m < 0)
@@ -55,55 +46,40 @@ int mod(int a, int b)
 }
 
 /**
- * This function can be used to print a polynomial that is represented by a
- * vector of its coefficients to stdout.
+ * This function can be used to reduce a polynomial's integer coefficients.
+ * The modulo will always be positive and the largest value we are going to
+ * use is 6984193. We can therefore simply use uint32_t.
  *
- * @param polynomial The polynomial to be printed
+ * @param coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param mod The modulo used to reduce each integer value
  */
-void print_polynomial(struct polynomial polynomial)
+void reduce_coefficients(uint32_t *coefficients, uint32_t mod)
 {
     for (size_t i = 0; i < VAR_P; i++)
     {
-        printf("%d ", polynomial.coefficients[i]);
-    }
-    printf("\n");
-}
-
-/**
- * This function can be used to reduce a polynomial's integer coefficients
- * mod q. This brings them back into Z_q.
- *
- * TODO : Update this function to not hardcode VAR_Q inside, but instead
- *  introduce a parameter for the modulus
- *
- * @param coefficients The integer coefficients
- */
-void reduce_coefficients(uint32_t *coefficients)
-{
-    for (size_t i = 0; i < VAR_P; i++)
-    {
-        coefficients[i] = mod(coefficients[i], VAR_Q);
+        coefficients[i] = modulo(coefficients[i], mod);
     }
 }
 
 /**
  * This function can be used to perform point - wise multiplication of the
- * integer coefficients of two polynomials and store the result.
+ * integer coefficients of two polynomials and store the (reduced) result.
  *
- * TODO : Verify that the result of uint32_t * uint32_t fits inside out
+ * FIXME : Ensure that the result of uint32_t * uint32_t fits inside output
  *
- * @param poly_o The output polynomial, this is where the result is stored
- * @param poly_a The first input polynomial
- * @param poly_b The second input polynomial
+ * @param output An array of integer coefficients for storing the result
+ * @param x An array of integer coefficients, the first input
+ * @param y An array of integer coefficients, the second input
+ * @param mod The modulo used to reduce each integer value of the result
  */
-void multiplication(uint32_t *poly_o, uint32_t *poly_a, uint32_t *poly_b)
+void multiplication(uint32_t *output, uint32_t *x, uint32_t *y, uint32_t mod)
 {
     for (size_t i = 0; i < VAR_P; i++)
     {
-        poly_o[i] = poly_a[i] * poly_b[i];
+        output[i] = x[i] * y[i];
     }
 
-    reduce_coefficients(poly_o);
+    reduce_coefficients(output, mod);
 }
 
 void forward_layer_1(uint32_t *coefficients)
@@ -138,7 +114,6 @@ void forward_layer_2(uint32_t *coefficients)
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
-
     }
 }
 
@@ -222,62 +197,84 @@ void inverse_layer_1(uint32_t *coefficients)
     /*
      * Multiply the result with the accumulated factor to complete the
      * inverse NTT transform. We can calculate this factor by computing
-     * 2^{-lay} mod q, where lay is equal to the number of layers. Multiply
-     * and reduce mod q to obtain the result
+     * 2^{-lay} mod q, where lay is equal to the number of layers.
      */
     unsigned int factor = 15;
 
     for (size_t i = 0; i < VAR_P; i++)
     {
         coefficients[i] = coefficients[i] * factor;
-        coefficients[i] = mod(coefficients[i], VAR_Q);
     }
+}
+
+/**
+ * This function can be used to compute the iterative inplace forward NTT of
+ * a polynomial represented by its integer coefficients. It wraps the earlier
+ * defined per-layer forward transformations into a single, easy to use
+ * function.
+ *
+ * FIXME : Ensure that the result of 'temp = zeta * coefficients[i + length];'
+ *  fits in the used numeric type
+ *
+ * @param coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param mod The modulo used to reduce each integer value
+ */
+void forward_ntt(uint32_t *coefficients, uint32_t mod)
+{
+    forward_layer_1(coefficients);
+    forward_layer_2(coefficients);
+    forward_layer_3(coefficients);
+    reduce_coefficients(coefficients, mod);
+}
+
+/**
+ * This function can be used to compute the iterative inplace inverse NTT of
+ * a polynomial represented by its integer coefficients. It wraps the earlier
+ * defined per-layer inverse transformations into a single, easy to use
+ * function.
+ *
+ * FIXME : Ensure that the result of 'coefficients[i + length] *= zeta;' fits
+ *  it the used numeric type
+ *
+ * @param coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param mod The modulo used to reduce each integer value
+ */
+void inverse_ntt(uint32_t *coefficients, uint32_t mod)
+{
+    inverse_layer_3(coefficients);
+    inverse_layer_2(coefficients);
+    inverse_layer_1(coefficients);
+    reduce_coefficients(coefficients, mod);
 }
 
 int main()
 {
-    /* Define two polynomials A, B of size VAR_P */
-    struct polynomial A = {2, 0, 0, 7, 2, 0, 0, 7};
-    struct polynomial B = {6, 0, 2, 0, 6, 0, 2, 0};
-
-    /* Print the original values */
-    printf("%s\n", "The original values are:");
-    print_polynomial(A);
-    print_polynomial(B);
-    printf("\n");
-
-    /* Compute the iterative inplace forward NTT of polynomials A, B */
-    forward_layer_1(A.coefficients);
-    forward_layer_2(A.coefficients);
-    forward_layer_3(A.coefficients);
-    reduce_coefficients(A.coefficients);
-
-    forward_layer_1(B.coefficients);
-    forward_layer_2(B.coefficients);
-    forward_layer_3(B.coefficients);
-    reduce_coefficients(B.coefficients);
+    /* Compute the iterative inplace forward NTT of poly_one, poly_two */
+    forward_ntt(poly_one, VAR_Q);
+    forward_ntt(poly_two, VAR_Q);
 
     /* Print the forward NTT values */
     printf("%s\n", "The forward values are:");
-    print_polynomial(A);
-    print_polynomial(B);
+    print_polynomial(poly_one);
+    print_polynomial(poly_two);
     printf("\n");
 
     /* Compute the point-wise multiplication of the integer coefficients */
-    struct polynomial C;
-    multiplication(C.coefficients, A.coefficients, B.coefficients);
+    /* Note that we are using poly_one to store the result */
+    /* FIXME : Make sure the result fits inside uint32_t */
+    multiplication(poly_one, poly_one, poly_two, VAR_Q);
 
-    printf("%s\n", "The values after the point-wise multiplication");
-    print_polynomial(C);
+    /* Print the point-wise multiplied values */
+    printf("%s\n", "The point-wise multiplied values are:");
+    print_polynomial(poly_one);
     printf("\n");
 
-    /* Compute the iterative inplace inverse NTT of polynomial C */
-    inverse_layer_3(C.coefficients);
-    inverse_layer_2(C.coefficients);
-    inverse_layer_1(C.coefficients);
+    /* Compute the iterative inplace inverse NTT of poly_one */
+    inverse_ntt(poly_one, VAR_Q);
 
-    printf("%s\n", "The inverse values are:");
-    print_polynomial(C);
+    /* Print the inverse NTT values, i.e. the result */
+    printf("%s\n", "The inverse values, i.e. the result, are:");
+    print_polynomial(poly_one);
     printf("\n");
 
     return 0;
