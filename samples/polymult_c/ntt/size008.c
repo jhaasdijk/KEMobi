@@ -253,29 +253,24 @@ int main()
     forward_ntt(poly_one, VAR_Q);
     forward_ntt(poly_two, VAR_Q);
 
-    /* Print the forward NTT values */
-    printf("%s\n", "The forward values are:");
-    print_polynomial(poly_one);
-    print_polynomial(poly_two);
-    printf("\n");
-
     /* Compute the point-wise multiplication of the integer coefficients */
     /* Note that we are using poly_one to store the result */
     /* FIXME : Make sure the result fits inside uint32_t */
     multiplication(poly_one, poly_one, poly_two, VAR_Q);
 
-    /* Print the point-wise multiplied values */
-    printf("%s\n", "The point-wise multiplied values are:");
-    print_polynomial(poly_one);
-    printf("\n");
-
     /* Compute the iterative inplace inverse NTT of poly_one */
     inverse_ntt(poly_one, VAR_Q);
 
-    /* Print the inverse NTT values, i.e. the result */
-    printf("%s\n", "The inverse values, i.e. the result, are:");
-    print_polynomial(poly_one);
-    printf("\n");
+    /* Test the result of the computation against the known values */
+    for (size_t i = 0; i < VAR_P; i++)
+    {
+        if (poly_one[i] != result[i])
+        {
+            printf("%s\n", "This is not correct!");
+            return -1;
+        }
+    }
 
+    printf("%s\n", "This is correct!");
     return 0;
 }
