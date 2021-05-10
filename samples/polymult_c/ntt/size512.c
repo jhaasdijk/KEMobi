@@ -10,7 +10,9 @@
  */
 
 /*
- * TODO : Make sure that numeric types are large enough to contain the result
+ * TODO : Make sure that numeric types are large enough to contain the result.
+ * We need to store the result of a multiplication of two 32 bit values inside a
+ * 64 bit value.
  */
 
 /**

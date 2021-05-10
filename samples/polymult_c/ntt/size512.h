@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define VAR_P 512 /* Define the size of the integer coefficient vectors */
+#define VAR_P 512     /* Define the size of the integer coefficient vectors */
 #define VAR_Q 6984193 /* Used to define the ring of integers modulo VAR_Q */
 
 /*
