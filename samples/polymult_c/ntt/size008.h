@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define VAR_P 8  /* Define the size of the integer coefficient vectors */
-#define VAR_Q 17 /* Coefficients are from the ring of integers modulo VAR_Q */
+#define VAR_P 8   /* Define the size of the integer coefficient vectors */
+#define VAR_Q 17  /* Coefficients are from the ring of integers modulo VAR_Q */
+#define INV_Q 241 /* VAR_Q^-1 modulo 2^width , i.e. 17^-1 modulo 2^8 */
 
 /*
  * These are the roots for a size - 8 cyclic NTT, i.e. we are multiplying two
