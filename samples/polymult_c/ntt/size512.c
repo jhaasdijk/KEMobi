@@ -3,103 +3,124 @@
 /*
  * Instead of defining a custom type for representing polynomials, each
  * polynomial is represented using an array of its integer coefficients. For
- * instance {1, 2, 3} represents the polynomial 3x^2 + 2x + 1. Each
- * coefficient is represented as an unsigned 32 bit integer (uint32_t). This
- * makes it easier to identify and use numeric types properly instead of
- * hiding what types are being used under the hood.
- */
-
-/*
- * TODO : Make sure that numeric types are large enough to contain the result.
- * We need to store the result of a multiplication of two 32 bit values inside a
- * 64 bit value.
+ * instance {1, 2, 3} represents the polynomial 3x^2 + 2x + 1. Each coefficient
+ * is represented as signed 32 bit integer (int32_t). This makes it easier to
+ * identify and use numeric types properly instead of hiding what types are
+ * being used under the hood.
+ * 
+ * Since the modulus Q (6984193) defines that the largest integer coefficient
+ * can be 6984192, we know that integer values are at most 23 bits long. We can
+ * use this information in our choice for numeric types.
  */
 
 /**
- * This function can be used to print a polynomial that is represented by a
- * array of its coefficients to stdout. Numeric values are printed with a
- * specified column width of 2. This makes it easier to compare output of
- * different runs.
- *
- * @param coefficients An array of integer coefficients (i.e. a polynomial)
+ * @brief Print an array of integer coefficients (i.e. a polynomial).
+ * 
+ * @details This function can be used to print a polynomial that is being
+ * represented by an array of its coefficients to stdout. Numeric values are
+ * printed with a specified column width of 7. This makes it easier to compare
+ * output of different runs.
+ * 
+ * @param[in] coefficients An array of integer coefficients (i.e. a polynomial).
  */
-void print_polynomial(uint32_t *coefficients)
+void print_polynomial(int32_t *coefficients)
 {
-    for (size_t i = 0; i < VAR_P; i++)
+    for (size_t idx = 0; idx < VAR_P; idx++)
     {
-        printf(" %*d", 7, coefficients[i]);
+        printf(" %*d", 7, coefficients[idx]);
     }
     printf("\n");
 }
 
 /**
- * Define a custom modulo operator that calculates the remainder after
- * Euclidean division. This snippet has been taken from
- * https://stackoverflow.com/a/52529440
+ * @brief Modulo operator that calculates the remainder after Euclidean division
+ * 
+ * @details This snippet has been adapted from the following Stack Overflow
+ * answer: https://stackoverflow.com/a/52529440
+ * 
+ * @param[in] value Integer value that needs to be reduced
+ * @param[in] mod The modulus with which to reduce the integer value
+ * 
+ * @return The remainder after Euclidean division
  */
-int modulo(int a, int b)
+int modulo(int value, int mod)
 {
-    int m = a % b;
-    if (m < 0)
+    int remainder = value % mod;
+    if (remainder < 0)
     {
-        m = (b < 0) ? m - b : m + b;
+        remainder = (mod < 0) ? remainder - mod : remainder + mod;
     }
-    return m;
+    return remainder;
 }
 
 /**
- * This function can be used to reduce a polynomial's integer coefficients.
- * The modulo will always be positive and the largest value we are going to
- * use is 6984193. We can therefore simply use uint32_t.
- *
- * @param coefficients An array of integer coefficients (i.e. a polynomial)
- * @param mod The modulo used to reduce each integer value
+ * @brief Reduce a polynomial's integer coefficients.
+ * 
+ * @details This function can be used to reduce a polynomial's integer
+ * coefficients. The modulus will always be positive and the largest value we
+ * are going to use is 6984193. We can therefore simply use int32_t.
+ * 
+ * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param[in] mod The modulo used to reduce each integer value
  */
-void reduce_coefficients(uint32_t *coefficients, uint32_t mod)
+void reduce_coefficients(int32_t *coefficients, int32_t mod)
 {
-    for (size_t i = 0; i < VAR_P; i++)
+    for (size_t idx = 0; idx < VAR_P; idx++)
     {
-        coefficients[i] = modulo(coefficients[i], mod);
+        coefficients[idx] = modulo(coefficients[idx], mod);
     }
 }
 
 /**
- * This function can be used to perform point - wise multiplication of the
- * integer coefficients of two polynomials and store the (reduced) result.
- *
- * FIXME : Ensure that the result of uint32_t * uint32_t fits inside output
- *
- * @param output An array of integer coefficients for storing the result
- * @param x An array of integer coefficients, the first input
- * @param y An array of integer coefficients, the second input
- * @param mod The modulo used to reduce each integer value of the result
+ * @brief Montgomery reduction of the input.
+ * 
+ * @details Given a 16 bit integer this function can be used to compute an 8 bit
+ * integer congruent to x * 256^-1 modulo VAR_Q.
+ * 
+ * @param[in] x The input integer value that needs to be reduced
+ * 
+ * @return Integer in {-Q + 1, ..., Q - 1} congruent to x * 256^-1 modulo VAR_Q.
  */
-void multiplication(uint32_t *output, uint32_t *x, uint32_t *y, uint32_t mod)
+int32_t montgomery_reduce(int64_t x)
 {
-    for (size_t i = 0; i < VAR_P; i++)
-    {
-        output[i] = x[i] * y[i];
-    }
-
-    reduce_coefficients(output, mod);
+    int32_t out;
+    out = (int32_t)x * INV_Q;
+    out = (x - (int64_t)out * VAR_Q) >> 32;
+    return out;
 }
 
-void forward_layer_1(uint32_t *coefficients)
+/**
+ * @brief Multiply the inputs and reduce the result using Montgomery reduction.
+ * 
+ * @details This function can be used to multiply two inputs x and y and reduce
+ * the result using Montgomery reduction. 
+ * 
+ * @param[in] x The first input factor
+ * @param[in] y The second input factor
+ * 
+ * @return Integer congruent to x * y * 256^-1 modulo VAR_Q
+ */
+int32_t multiply_reduce(int32_t x, int32_t y)
+{
+    return montgomery_reduce((int64_t)x * y);
+}
+
+void forward_layer_1(int32_t *coefficients)
 {
     unsigned int length = 256, ridx = 0;
     int temp;
 
-    uint32_t zeta = roots[ridx];
+    int32_t zeta = roots[ridx];
 
-    for (size_t i = 0; i < length; i++)
+    for (size_t idx = 0; idx < length; idx++)
     {
-        temp = zeta * coefficients[i + length];
-        coefficients[i + length] = coefficients[i] - temp;
-        coefficients[i] = coefficients[i] + temp;
+        temp = multiply_reduce(zeta, coefficients[idx + length]);
+        coefficients[idx + length] = coefficients[idx] - temp;
+        coefficients[idx] = coefficients[idx] + temp;
     }
 }
 
-void forward_layer_2(uint32_t *coefficients)
+void forward_layer_2(int32_t *coefficients)
 {
     unsigned int length = 128, ridx = 1;
     unsigned int start, idx;
@@ -107,19 +128,19 @@ void forward_layer_2(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_3(uint32_t *coefficients)
+void forward_layer_3(int32_t *coefficients)
 {
     unsigned int length = 64, ridx = 3;
     unsigned int start, idx;
@@ -127,19 +148,19 @@ void forward_layer_3(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_4(uint32_t *coefficients)
+void forward_layer_4(int32_t *coefficients)
 {
     unsigned int length = 32, ridx = 7;
     unsigned int start, idx;
@@ -147,19 +168,19 @@ void forward_layer_4(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_5(uint32_t *coefficients)
+void forward_layer_5(int32_t *coefficients)
 {
     unsigned int length = 16, ridx = 15;
     unsigned int start, idx;
@@ -167,19 +188,19 @@ void forward_layer_5(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_6(uint32_t *coefficients)
+void forward_layer_6(int32_t *coefficients)
 {
     unsigned int length = 8, ridx = 31;
     unsigned int start, idx;
@@ -187,19 +208,19 @@ void forward_layer_6(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_7(uint32_t *coefficients)
+void forward_layer_7(int32_t *coefficients)
 {
     unsigned int length = 4, ridx = 63;
     unsigned int start, idx;
@@ -207,19 +228,19 @@ void forward_layer_7(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_8(uint32_t *coefficients)
+void forward_layer_8(int32_t *coefficients)
 {
     unsigned int length = 2, ridx = 127;
     unsigned int start, idx;
@@ -227,19 +248,19 @@ void forward_layer_8(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void forward_layer_9(uint32_t *coefficients)
+void forward_layer_9(int32_t *coefficients)
 {
     unsigned int length = 1, ridx = 255;
     unsigned int start, idx;
@@ -247,19 +268,19 @@ void forward_layer_9(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots[ridx];
+        int32_t zeta = roots[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
         {
-            temp = zeta * coefficients[idx + length];
+            temp = multiply_reduce(zeta, coefficients[idx + length]);
             coefficients[idx + length] = coefficients[idx] - temp;
             coefficients[idx] = coefficients[idx] + temp;
         }
     }
 }
 
-void inverse_layer_9(uint32_t *coefficients)
+void inverse_layer_9(int32_t *coefficients)
 {
     unsigned int length = 1, ridx = 0;
     unsigned int start, idx;
@@ -267,7 +288,7 @@ void inverse_layer_9(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -275,12 +296,12 @@ void inverse_layer_9(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_8(uint32_t *coefficients)
+void inverse_layer_8(int32_t *coefficients)
 {
     unsigned int length = 2, ridx = 256;
     unsigned int start, idx;
@@ -288,7 +309,7 @@ void inverse_layer_8(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -296,12 +317,12 @@ void inverse_layer_8(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_7(uint32_t *coefficients)
+void inverse_layer_7(int32_t *coefficients)
 {
     unsigned int length = 4, ridx = 384;
     unsigned int start, idx;
@@ -309,7 +330,7 @@ void inverse_layer_7(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -317,12 +338,12 @@ void inverse_layer_7(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_6(uint32_t *coefficients)
+void inverse_layer_6(int32_t *coefficients)
 {
     unsigned int length = 8, ridx = 448;
     unsigned int start, idx;
@@ -330,7 +351,7 @@ void inverse_layer_6(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -338,12 +359,12 @@ void inverse_layer_6(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_5(uint32_t *coefficients)
+void inverse_layer_5(int32_t *coefficients)
 {
     unsigned int length = 16, ridx = 480;
     unsigned int start, idx;
@@ -351,7 +372,7 @@ void inverse_layer_5(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -359,12 +380,12 @@ void inverse_layer_5(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_4(uint32_t *coefficients)
+void inverse_layer_4(int32_t *coefficients)
 {
     unsigned int length = 32, ridx = 496;
     unsigned int start, idx;
@@ -372,7 +393,7 @@ void inverse_layer_4(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -380,12 +401,12 @@ void inverse_layer_4(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_3(uint32_t *coefficients)
+void inverse_layer_3(int32_t *coefficients)
 {
     unsigned int length = 64, ridx = 504;
     unsigned int start, idx;
@@ -393,7 +414,7 @@ void inverse_layer_3(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -401,12 +422,12 @@ void inverse_layer_3(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_2(uint32_t *coefficients)
+void inverse_layer_2(int32_t *coefficients)
 {
     unsigned int length = 128, ridx = 508;
     unsigned int start, idx;
@@ -414,7 +435,7 @@ void inverse_layer_2(uint32_t *coefficients)
 
     for (start = 0; start < VAR_P; start = idx + length)
     {
-        uint32_t zeta = roots_inv[ridx];
+        int32_t zeta = roots_inv[ridx];
         ridx = ridx + 1;
 
         for (idx = start; idx < start + length; idx++)
@@ -422,52 +443,49 @@ void inverse_layer_2(uint32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] *= zeta;
+            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
         }
     }
 }
 
-void inverse_layer_1(uint32_t *coefficients)
+void inverse_layer_1(int32_t *coefficients)
 {
     unsigned int length = 256, ridx = 510;
     int temp;
 
-    uint32_t zeta = roots_inv[ridx];
+    int32_t zeta = roots_inv[ridx];
 
-    for (size_t i = 0; i < length; i++)
+    for (size_t idx = 0; idx < length; idx++)
     {
-        temp = coefficients[i];
-        coefficients[i] = temp + coefficients[i + length];
-        coefficients[i + length] = temp - coefficients[i + length];
-        coefficients[i + length] *= zeta;
+        temp = coefficients[idx];
+        coefficients[idx] = temp + coefficients[idx + length];
+        coefficients[idx + length] = temp - coefficients[idx + length];
+        coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
     }
 
     /*
-     * Multiply the result with the accumulated factor to complete the
-     * inverse NTT transform. We can calculate this factor by computing
-     * 2^{-lay} mod q, where lay is equal to the number of layers.
+     * Multiply the result with the accumulated factor to complete the inverse
+     * NTT transform
      */
-    unsigned int factor = 6970552;
 
-    for (size_t i = 0; i < VAR_P; i++)
+    for (size_t idx = 0; idx < VAR_P; idx++)
     {
-        coefficients[i] = coefficients[i] * factor;
+        coefficients[idx] = multiply_reduce(coefficients[idx], FACTOR);
     }
 }
 
 /**
- * This function can be used to compute the iterative inplace forward NTT of
- * a polynomial represented by its integer coefficients. It wraps the earlier
- * defined per-layer forward transformations into a single, easy to use
+ * @brief Compute the iterative inplace forward NTT of a polynomial.
+ * 
+ * @details This function can be used to compute the iterative inplace forward
+ * NTT of a polynomial represented by its integer coefficients. It wraps the
+ * earlier defined per-layer forward transformations into a single, easy to use
  * function.
- *
- * FIXME : Ensure that the result of 'temp = zeta * coefficients[i + length];'
- *  fits in the used numeric type
- *
- * @param coefficients An array of integer coefficients (i.e. a polynomial)
- * @param mod The modulo used to reduce each integer value
+ * 
+ * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param[in] mod The modulo used to reduce each integer value
  */
-void forward_ntt(uint32_t *coefficients, uint32_t mod)
+void forward_ntt(int32_t *coefficients, int32_t mod)
 {
     forward_layer_1(coefficients);
     forward_layer_2(coefficients);
@@ -482,18 +500,17 @@ void forward_ntt(uint32_t *coefficients, uint32_t mod)
 }
 
 /**
- * This function can be used to compute the iterative inplace inverse NTT of
- * a polynomial represented by its integer coefficients. It wraps the earlier
- * defined per-layer inverse transformations into a single, easy to use
+ * @brief Compute the iterative inplace inverse NTT of a polynomial.
+ * 
+ * @details This function can be used to compute the iterative inplace inverse
+ * NTT of a polynomial represented by its integer coefficients. It wraps the
+ * eaerlier defined per-layer inverse transformations into a single, easy to use
  * function.
- *
- * FIXME : Ensure that the result of 'coefficients[i + length] *= zeta;' fits
- *  it the used numeric type
- *
- * @param coefficients An array of integer coefficients (i.e. a polynomial)
- * @param mod The modulo used to reduce each integer value
+ * 
+ * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param[in] mod The modulo used to reduce each integer value
  */
-void inverse_ntt(uint32_t *coefficients, uint32_t mod)
+void inverse_ntt(int32_t *coefficients, int32_t mod)
 {
     inverse_layer_9(coefficients);
     inverse_layer_8(coefficients);
@@ -509,24 +526,46 @@ void inverse_ntt(uint32_t *coefficients, uint32_t mod)
 
 int main()
 {
-    /* Compute the iterative inplace forward NTT of poly_one, poly_two */
+    /**
+     * @brief Compute the iterative inplace forward NTT of poly_one, poly_two
+     */
+
     forward_ntt(poly_one, VAR_Q);
     forward_ntt(poly_two, VAR_Q);
 
-    /* Compute the point-wise multiplication of the integer coefficients */
-    /* Note that we are using poly_one to store the result */
-    /* FIXME : Make sure the result fits inside uint32_t */
-    multiplication(poly_one, poly_one, poly_two, VAR_Q);
+    /**
+     * @brief Compute the point-wise multiplication of the integer coefficients
+     * 
+     * The following is used to perform the point-wise multiplication of the
+     * integer coefficients of two polynomials and store the (reduced) result.
+     * Please note that we did not have to declare a new array, we could have
+     * simply reused either poly_one or poly_two. To improve readability
+     * however, a new array poly_out is introduced.
+     */
 
-    /* Compute the iterative inplace inverse NTT of poly_one */
-    inverse_ntt(poly_one, VAR_Q);
+    int32_t poly_out[VAR_P];
 
-    /* Test the result of the computation against the known values */
-    for (size_t i = 0; i < VAR_P; i++)
+    for (size_t idx = 0; idx < VAR_P; idx++)
     {
-        if (poly_one[i] != result[i])
+        poly_out[idx] = multiply_reduce(poly_one[idx], poly_two[idx]);
+    }
+
+    /**
+     * @brief Compute the iterative inplace inverse NTT of poly_out
+     */
+
+    inverse_ntt(poly_out, VAR_Q);
+
+    /**
+     * @brief Test the result of the computation against the known test values
+     */
+
+    for (size_t idx = 0; idx < VAR_P; idx++)
+    {
+        if (poly_out[idx] != result[idx])
         {
             printf("%s\n", "This is not correct!");
+            printf("%s%ld\n", "Error at index: ", idx);
             return -1;
         }
     }
