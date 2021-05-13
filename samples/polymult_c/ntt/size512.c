@@ -17,9 +17,7 @@
  * @brief Print an array of integer coefficients (i.e. a polynomial).
  * 
  * @details This function can be used to print a polynomial that is being
- * represented by an array of its coefficients to stdout. Numeric values are
- * printed with a specified column width of 7. This makes it easier to compare
- * output of different runs.
+ * represented by an array of its coefficients to stdout.
  * 
  * @param[in] coefficients An array of integer coefficients (i.e. a polynomial).
  */
@@ -27,7 +25,7 @@ void print_polynomial(int32_t *coefficients)
 {
     for (size_t idx = 0; idx < VAR_P; idx++)
     {
-        printf(" %*d", 7, coefficients[idx]);
+        printf(" %d", coefficients[idx]);
     }
     printf("\n");
 }
