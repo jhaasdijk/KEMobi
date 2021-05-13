@@ -297,7 +297,7 @@ void inverse_layer_9(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -318,7 +318,7 @@ void inverse_layer_8(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -339,7 +339,7 @@ void inverse_layer_7(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -360,7 +360,7 @@ void inverse_layer_6(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -381,7 +381,7 @@ void inverse_layer_5(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -402,7 +402,7 @@ void inverse_layer_4(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -423,7 +423,7 @@ void inverse_layer_3(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -444,7 +444,7 @@ void inverse_layer_2(int32_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -461,7 +461,7 @@ void inverse_layer_1(int32_t *coefficients)
         temp = coefficients[idx];
         coefficients[idx] = temp + coefficients[idx + length];
         coefficients[idx + length] = temp - coefficients[idx + length];
-        coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+        coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
     }
 
     /*
