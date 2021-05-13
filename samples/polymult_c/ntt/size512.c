@@ -41,7 +41,7 @@ void print_polynomial(int32_t *coefficients)
  * 
  * @return The remainder after Euclidean division
  */
-int modulo(int value, int mod)
+int modulo(long int value, long int mod)
 {
     int remainder = value % mod;
     if (remainder < 0)
@@ -96,11 +96,14 @@ int32_t montgomery_reduce(int64_t x)
  * @param[in] x The first input factor
  * @param[in] y The second input factor
  * 
- * @return Integer congruent to x * y * 256^-1 modulo VAR_Q
+ * @return Integer congruent to x * y * (2^32)^-1 modulo VAR_Q
  */
 int32_t multiply_reduce(int32_t x, int32_t y)
 {
-    return montgomery_reduce((int64_t)x * y);
+    // return montgomery_reduce((int64_t)x * y); /* TODO : Fix this */
+    int64_t value = (int64_t)x * y;
+    int32_t out = modulo(value, VAR_Q);
+    return out;
 }
 
 void forward_layer_1(int32_t *coefficients)
