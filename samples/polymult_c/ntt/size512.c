@@ -72,12 +72,12 @@ void reduce_coefficients(int32_t *coefficients, int32_t mod)
 /**
  * @brief Montgomery reduction of the input.
  * 
- * @details Given a 16 bit integer this function can be used to compute an 8 bit
- * integer congruent to x * 256^-1 modulo VAR_Q.
+ * @details Given a 64 bit integer this function can be used to compute a 32 bit
+ * integer congruent to x * (2^32)^-1 modulo VAR_Q.
  * 
  * @param[in] x The input integer value that needs to be reduced
  * 
- * @return Integer in {-Q + 1, ..., Q - 1} congruent to x * 256^-1 modulo VAR_Q.
+ * @return Integer in {-Q + 1, ..., Q - 1} congruent to x * (2^32)^-1 modulo VAR_Q.
  */
 int32_t montgomery_reduce(int64_t x)
 {
@@ -88,7 +88,7 @@ int32_t montgomery_reduce(int64_t x)
 }
 
 /**
- * @brief Multiply the inputs and reduce the result using Montgomery reduction.
+ * @brief Multiply the inputs and reduce the result.
  * 
  * @details This function can be used to multiply two inputs x and y and reduce
  * the result using Montgomery reduction. 
