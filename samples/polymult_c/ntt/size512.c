@@ -41,9 +41,9 @@ void print_polynomial(int32_t *coefficients)
  * 
  * @return The remainder after Euclidean division
  */
-int modulo(long int value, long int mod)
+int32_t modulo(int64_t value, int32_t mod)
 {
-    int remainder = value % mod;
+    int32_t remainder = value % mod;
     if (remainder < 0)
     {
         remainder = (mod < 0) ? remainder - mod : remainder + mod;
