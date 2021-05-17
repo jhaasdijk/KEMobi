@@ -77,6 +77,15 @@ void reduce_coefficients(int8_t *coefficients, int8_t mod)
  * @details Given a 16 bit integer this function can be used to compute an 8 bit
  * integer congruent to x * 256^-1 modulo VAR_Q.
  * 
+ * @note A cool side effect of our choice for VAR_Q (17) is that we can use the
+ * Montgomery reduction without having to explicitly change our values into the
+ * Montgomery domain. Normally when using the Montgomery reduction we would need
+ * to bring our value into the Montgomery domain by multiplying it with 2^8 % 17
+ * to ensure that x * (2^8)^-1 modulo VAR_Q computes the correct result. However
+ * since 2^8 % 17 is equal to 1, updating values into the Montgomery domain
+ * would be the same as multiplying them by 1. We can therefore use this 'for
+ * free'.
+ * 
  * @param[in] x The input integer value that needs to be reduced
  * 
  * @return Integer in {-Q + 1, ..., Q - 1} congruent to x * 256^-1 modulo VAR_Q.
@@ -177,7 +186,7 @@ void inverse_layer_3(int8_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -198,7 +207,7 @@ void inverse_layer_2(int8_t *coefficients)
             temp = coefficients[idx];
             coefficients[idx] = temp + coefficients[idx + length];
             coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
         }
     }
 }
@@ -215,7 +224,7 @@ void inverse_layer_1(int8_t *coefficients)
         temp = coefficients[idx];
         coefficients[idx] = temp + coefficients[idx + length];
         coefficients[idx + length] = temp - coefficients[idx + length];
-        coefficients[idx + length] = multiply_reduce(coefficients[idx + length], zeta);
+        coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
     }
 
     /*
