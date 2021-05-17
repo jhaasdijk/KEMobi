@@ -143,7 +143,7 @@ void print_polynomial(int32_t *coefficients, int16_t size)
 {
     for (int idx = 0; idx < size; idx++)
     {
-        printf(" %d", coefficients[idx]);
+        printf(" %d,", coefficients[idx]);
     }
     printf("\n");
 }
