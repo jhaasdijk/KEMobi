@@ -661,43 +661,139 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
     reduce_coefficients(coefficients, mod);
 }
 
+/** TODO
+ * @brief Reduce a polynomial by (x^761 - x - 1)
+ * 
+ * @param coefficients 
+ */
+void reduce_terms_761(int32_t *coefficients)
+{
+    for (uint16_t idx = GPR - 1; idx >= NTRU_P; idx--)
+    {
+        if (coefficients[idx] > 0)
+        {                                                        /* x^p is nonzero */
+            coefficients[idx - NTRU_P + 1] += coefficients[idx]; /* add x^p into x^1 */
+            coefficients[idx - NTRU_P] += coefficients[idx];     /* add x^p into x^0 */
+            coefficients[idx] = 0;                               /* zero x^p */
+        }
+    }
+}
+
 int main()
 {
-    /**
-     * @brief Compute the iterative inplace forward NTT of poly_one, poly_two
-     */
+    /* -- Zero pad polynomials poly_one, poly_two to size GPR "*/
 
-    ntt_forward(poly_one, NTT_Q);
-    ntt_forward(poly_two, NTT_Q);
+    int32_t p1_pad[GPR];
+    int32_t p2_pad[GPR];
 
-    /**
-     * @brief Compute the point-wise multiplication of the integer coefficients
-     * 
-     * The following is used to perform the point-wise multiplication of the
-     * integer coefficients of two polynomials and store the (reduced) result.
-     * Please note that we did not have to declare a new array, we could have
-     * simply reused either poly_one or poly_two. To improve readability
-     * however, a new array poly_out is introduced.
-     */
+    pad(p1_pad, poly_one);
+    pad(p2_pad, poly_two);
 
-    int32_t poly_out[NTT_P];
+    /* -- Perform Good's permutation to obtain GP0 size-GP1 polynomials each "*/
 
-    for (size_t idx = 0; idx < NTT_P; idx++)
+    int32_t p1_pad_g[GP0][GP1];
+    int32_t p2_pad_g[GP0][GP1];
+
+    goods_forward(p1_pad_g, p1_pad);
+    goods_forward(p2_pad_g, p2_pad);
+
+    /* -- Perform GP0 size-GP1 forward NTTs "*/
+
+    ntt_forward(p1_pad_g[0], NTT_Q);
+    ntt_forward(p1_pad_g[1], NTT_Q);
+    ntt_forward(p1_pad_g[2], NTT_Q);
+
+    ntt_forward(p2_pad_g[0], NTT_Q);
+    ntt_forward(p2_pad_g[1], NTT_Q);
+    ntt_forward(p2_pad_g[2], NTT_Q);
+
+    /* TODO
+-- Calculate 'point-wise' multiplication of the coefficients "
+Note that the 'smaller' polynomial multiplications are not 'normal', as we are
+not actually computing the result 'point-wise'. Instead we multiply two degree 
+2 polynomials and reduce the result mod (x^3 - 1). E.g.:
+
+( [A[0][0], A[1][0], A[2][0]] * [B[0][0], B[1][0], B[2][0]] ) % (X^3 - 1)
+= C[0][0], C[1][0], C[2][0]
+*/
+
+    int32_t C[GP0][GP1];
+
+    for (size_t idx = 0; idx < GP1; idx++)
     {
-        poly_out[idx] = multiply_modulo(poly_one[idx], poly_two[idx], NTT_Q);
+        // Define an accumulator to store temporary values
+        int32_t accum[2 * GP0 - 1] = {0, 0, 0, 0, 0};
+
+        // Obtain two degree 2 polynomials from A, B
+        int32_t A[GP0] = {p1_pad_g[0][idx], p1_pad_g[1][idx], p1_pad_g[2][idx]};
+        int32_t B[GP0] = {p2_pad_g[0][idx], p2_pad_g[1][idx], p2_pad_g[2][idx]};
+
+        // Multiply the two polynomials naively
+        for (size_t n = 0; n < GP0; n++)
+        {
+            for (size_t m = 0; m < GP0; m++)
+            {
+                accum[n + m] += multiply_modulo(A[n], B[m], NTT_Q);
+            }
+        }
+
+        // Reduce mod (x^3 - 1)
+        for (size_t idx = 2 * GP0 - 2; idx > GP0 - 1; idx--)
+        {
+            if (accum[idx] > 0)
+            {                                   // x^p is nonzero
+                accum[idx - GP0] += accum[idx]; // add x^p into x^0
+                accum[idx] = 0;                 // zero x^p
+            }
+        }
+
+        /* TODO : This line needs to be here otherwise the result is incorrect,
+         * why? Figure this out mister */
+        reduce_coefficients(accum, NTT_Q);
+
+        // Store the result
+        C[0][idx] = accum[0];
+        C[1][idx] = accum[1];
+        C[2][idx] = accum[2];
     }
 
-    /**
-     * @brief Compute the iterative inplace inverse NTT of poly_out
-     */
+    /* -- Inverse GP0 size - GP1 NTTs "*/
 
-    ntt_inverse(poly_out, NTT_Q);
+    ntt_inverse(C[0], NTT_Q);
+    ntt_inverse(C[1], NTT_Q);
+    ntt_inverse(C[2], NTT_Q);
+
+    /* -- Undo Good's permutation "*/
+
+    int32_t tempA[GPR];
+    goods_inverse(tempA, C);
+
+    /* -- Reduce mod (x^761 - x - 1) "*/
+
+    reduce_terms_761(tempA);
+    reduce_coefficients(tempA, NTRU_Q);
+
+    /* -- Store the result "*/
+
+    int32_t poly_out[NTRU_P];
+
+    for (size_t idx = 0; idx < NTRU_P; idx++)
+    {
+        poly_out[idx] = tempA[idx];
+    }
+
+    /* reduce the coefficients properly */
+    for (size_t idx = 0; idx < NTRU_P; idx++)
+    {
+        poly_out[idx] = modulo(poly_out[idx], NTRU_Q);
+    }
+    print_polynomial(poly_out, NTRU_P);
 
     /**
      * @brief Test the result of the computation against the known test values
      */
 
-    for (size_t idx = 0; idx < NTT_P; idx++)
+    for (size_t idx = 0; idx < NTRU_P; idx++)
     {
         if (poly_out[idx] != result[idx])
         {
@@ -709,4 +805,51 @@ int main()
 
     printf("%s\n", "This is correct!");
     return 0;
+
+    // /**
+    //  * @brief Compute the iterative inplace forward NTT of poly_one, poly_two
+    //  */
+
+    // ntt_forward(poly_one, NTT_Q);
+    // ntt_forward(poly_two, NTT_Q);
+
+    // /**
+    //  * @brief Compute the point-wise multiplication of the integer coefficients
+    //  *
+    //  * The following is used to perform the point-wise multiplication of the
+    //  * integer coefficients of two polynomials and store the (reduced) result.
+    //  * Please note that we did not have to declare a new array, we could have
+    //  * simply reused either poly_one or poly_two. To improve readability
+    //  * however, a new array poly_out is introduced.
+    //  */
+
+    // int32_t poly_out[NTT_P];
+
+    // for (size_t idx = 0; idx < NTT_P; idx++)
+    // {
+    //     poly_out[idx] = multiply_modulo(poly_one[idx], poly_two[idx], NTT_Q);
+    // }
+
+    // /**
+    //  * @brief Compute the iterative inplace inverse NTT of poly_out
+    //  */
+
+    // ntt_inverse(poly_out, NTT_Q);
+
+    // /**
+    //  * @brief Test the result of the computation against the known test values
+    //  */
+
+    // for (size_t idx = 0; idx < NTT_P; idx++)
+    // {
+    //     if (poly_out[idx] != result[idx])
+    //     {
+    //         printf("%s\n", "This is not correct!");
+    //         printf("%s%ld\n", "Error at index: ", idx);
+    //         return -1;
+    //     }
+    // }
+
+    // printf("%s\n", "This is correct!");
+    // return 0;
 }
