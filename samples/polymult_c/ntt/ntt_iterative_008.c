@@ -1,4 +1,4 @@
-#include "size008.h"
+#include "ntt_iterative_008.h"
 
 /*
  * Instead of defining a custom type for representing polynomials, each

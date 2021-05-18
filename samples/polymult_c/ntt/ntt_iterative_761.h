@@ -1,5 +1,5 @@
-#ifndef SIZE512_H
-#define SIZE512_H
+#ifndef SIZE761_H
+#define SIZE761_H
 
 #include <stdint.h>
 #include <stdio.h>

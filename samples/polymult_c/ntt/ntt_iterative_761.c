@@ -1,4 +1,4 @@
-#include "size512.h"
+#include "ntt_iterative_761.h"
 
 /**
  * @brief Perform NTT based polynomial multiplication
