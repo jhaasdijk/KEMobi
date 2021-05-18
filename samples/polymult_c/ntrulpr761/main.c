@@ -641,7 +641,7 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
  * 
  * @details This function can be used to compute the iterative inplace inverse
  * NTT of a polynomial represented by its integer coefficients. It wraps the
- * eaerlier defined per-layer inverse transformations into a single, easy to use
+ * earlier defined per-layer inverse transformations into a single, easy to use
  * function.
  * 
  * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
@@ -725,7 +725,7 @@ int main()
     /**
      * @brief Compute the iterative inplace forward NTTs.
      * 
-     * This computes the forward NTT tranformation of our size-512 polynomials.
+     * This computes the forward NTT transformation of our size-512 polynomials.
      */
 
     for (size_t idx = 0; idx < GP0; idx++)
@@ -789,7 +789,7 @@ int main()
     /**
      * @brief Compute the iterative inplace inverse NTT.
      * 
-     * This computes the inverse NTT tranformation of our size-512 polynomials.
+     * This computes the inverse NTT transformation of our size-512 polynomials.
      */
 
     for (size_t idx = 0; idx < GP0; idx++)
