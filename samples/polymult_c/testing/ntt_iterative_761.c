@@ -31,22 +31,6 @@
  */
 
 /**
- * TODO : Move this 512 example into its own place. It's the only one we are
- * considering in the end.
- * 
- * TODO : Extract pieces into other (helper) files to ensure that the source
- * remains readable. E.g. Goods | NTT | Util | ...
- * 
- * TODO : Are there functions that we can de-generalize? While the Python
- * implementation is great as a general approach this C source is used only for
- * the kem/ntrulpr761 parameter set.
- * 
- * TODO : We are working with size 512, 761 and 1536 arrays of integer
- * coefficients. Can we think of something such that we do not need to hardcode
- * this or specify the size at every function call?
- */
-
-/**
  * @brief Zero pad an array of integer coefficients to the specified size.
  * 
  * @details This function can be used to zero pad an array of integer
