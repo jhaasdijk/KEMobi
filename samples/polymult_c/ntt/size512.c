@@ -654,6 +654,21 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
     inverse_layer_7(coefficients);
     inverse_layer_6(coefficients);
     inverse_layer_5(coefficients);
+
+    /**
+     * @brief Ensure that the coefficients stay within their allocated 32 bits
+     * 
+     * Due to how the inverse NTT transformation is calculated, each layer
+     * increases the possible bitsize of the integer coefficients by 1.
+     * Performing 9 layers increases the possible bitsize of the integer
+     * coefficients by 9. To ensure that the integer coefficients stay within
+     * their allocated 32 bits we either 1) need to ensure that all values are
+     * at most 23 bits at the start of the function or 2) perform an
+     * intermediate reduction.
+     */
+
+    reduce_coefficients(coefficients, mod);
+
     inverse_layer_4(coefficients);
     inverse_layer_3(coefficients);
     inverse_layer_2(coefficients);
