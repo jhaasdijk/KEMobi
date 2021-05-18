@@ -1,6 +1,6 @@
 # KEMobi
 
-**Jasper Haasdijk**, April 2021.
+**Jasper Haasdijk**, May 2021.
 
 This repository contains the source code for my Master Thesis Computing Science
 at the Digital Security Group, Radboud University, Nijmegen, The Netherlands.
@@ -8,19 +8,14 @@ at the Digital Security Group, Radboud University, Nijmegen, The Netherlands.
 The directory structure currently looks like this:
 
 ```
-$ tree -dL 2
+$ tree -dL 1
 
 .
 ├── enableccnt
 ├── ntruprime-20201007
-│   ├── KAT
-│   ├── Optimized_Implementation
-│   ├── Reference_Implementation
-│   └── Supporting_Documentation
 └── samples
-    ├── common
-    ├── polyadd
-    └── polymult
+
+3 directories
 ```
 
 - `enableccnt` contains the source for setting up a kernel module to enable
@@ -33,15 +28,10 @@ documentation. This has been taken from the original NTRU Prime NISTPQC full
 submission package, last updated 7 October 2020. All of this (and more) is
 made available through their [web page](https://ntruprime.cr.yp.to/).
 
-- `samples` contains three directories: `common`, `polyadd` and `polymult`.
-The `common` directory is used for sharing components (C sources, Makefile)
-which can be reused throughout the repository. The `polyadd` directory is
-used to contain an initial assembler implementation of polynomial addition.
-This directory is used to get familiar with the A64 instruction set,
-specifically the A64 SIMD instructions. The `polymult` directory is used to
-contain an initial implementation of cyclic convolution which can be used to
-multiply two polynomials within the polynomial field `(Z/q) [x] / (x^p - x -
-1)`.
+- `samples` contains various directories that change every now and again. It's
+main use is to provide a structured space for prototyping and developing sources
+related to this thesis. Please refer to the directory specific documentation for
+more information.
 
 ## Installation
 
