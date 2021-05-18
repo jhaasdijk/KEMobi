@@ -676,14 +676,19 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
     reduce_coefficients(coefficients, mod);
 }
 
-/** TODO
- * @brief Reduce a polynomial by (x^761 - x - 1)
+/**
+ * @brief Reduce a polynomial mod (x^761 - x - 1).
  * 
- * @param coefficients 
+ * @details This function can be used to reduce a polynomial. It takes an array
+ * of integer coefficients of size 1536 and reduces this mod (x^761 - x - 1),
+ * i.e. x^761 = x + 1. This is done by adding coefficients[idx] into
+ * coefficients[1] and coefficients[0] whenever coefficients[idx] is nonzero.
+ * 
+ * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
  */
 void reduce_terms_761(int32_t *coefficients)
 {
-    for (uint16_t idx = GPR - 1; idx >= NTRU_P; idx--)
+    for (size_t idx = GPR - 1; idx >= NTRU_P; idx--)
     {
         if (coefficients[idx] > 0)
         {                                                        /* x^p is nonzero */
