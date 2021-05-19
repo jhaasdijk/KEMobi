@@ -28,5 +28,5 @@ cleandep :
 	rm *.d
 
 # Include shared Makefile components
-include ../common/config.mk
-include ../common/rules.mk
+include ../../common/config.mk
+include ../../common/rules.mk
