@@ -6,6 +6,29 @@
  */
 
 /**
+ * @brief Read the current value from the PMCCNTR_EL0 System register.
+ * 
+ * @details For benchmarking purposes we are interested in the CPU cycle count
+ * as a performance metric. This function can be used to read from the
+ * PMCCNTR_EL0 System register and return the current value of the processor
+ * cycle counter.
+ * 
+ * @note We use the inline keyword to ask the compiler to attempt to embed the
+ * function's content into the calling code instead of executing a function
+ * call. There are no guarantees as to whether this actually happpens though.
+ * The compiler may choose to ignore it.
+ * 
+ * @return The current value of the processor cycle counter.
+ */
+inline uint64_t counter_read(void)
+{
+    uint64_t counter = 0;
+    asm volatile("MRS %0, PMCCNTR_EL0"
+                 : "=r"(counter));
+    return counter;
+}
+
+/**
  * @brief Print an array of integer coefficients (i.e. a polynomial).
  * 
  * @details This function can be used to print a polynomial that is being

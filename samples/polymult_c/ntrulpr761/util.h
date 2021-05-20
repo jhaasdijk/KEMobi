@@ -19,6 +19,8 @@
 
 /* Provide function declarations */
 
+uint64_t counter_read(void);
+
 void print_polynomial(int32_t *coefficients, int16_t size);
 
 void pad(int32_t *padded, int32_t *coefficients);

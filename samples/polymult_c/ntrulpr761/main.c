@@ -11,6 +11,12 @@
 int main()
 {
     /**
+     * @brief Read the current value of the processor cycle counter (before).
+     */
+
+    uint64_t t0 = counter_read();
+
+    /**
      * @brief Zero pad the input polynomials to size 1536.
      */
 
@@ -165,5 +171,16 @@ int main()
     }
 
     printf("%s\n", "This is correct!");
+
+    /**
+     * @brief Read the current value of the processor cycle counter (after).
+     * 
+     * This value is compared to the (before) value to compute the performance
+     * of the current implemenatation considering CPU cycle count.
+     */
+
+    uint64_t t1 = counter_read();
+    printf("%ld\n", t1 - t0);
+
     return 0;
 }
