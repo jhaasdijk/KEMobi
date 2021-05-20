@@ -68,7 +68,7 @@ void pad(int32_t *padded, int32_t *coefficients)
  */
 int32_t modulo(int64_t value, int32_t mod)
 {
-    int32_t remainder = value % mod;
+    int32_t remainder = (int32_t)(value % mod);
     if (remainder < 0)
     {
         remainder = (mod < 0) ? remainder - mod : remainder + mod;
@@ -110,7 +110,7 @@ int32_t montgomery_reduce(int64_t x)
 {
     int32_t out;
     out = (int32_t)x * NTT_QINV;
-    out = (x - (int64_t)out * NTT_Q) >> 32;
+    out = (int32_t)((x - (int64_t)out * NTT_Q) >> 32);
     return out;
 }
 
