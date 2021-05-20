@@ -799,6 +799,19 @@ int main()
     reduce_terms_761(C_vec);
 
     /**
+     * @brief Ensure the result is correct in the integer domain.
+     * 
+     * Before we can further reduce the integer coefficients we need to ensure
+     * that the result is correct in the integer domain. We therefore reduce all
+     * 761 integer coefficients mod 6984193.
+     */
+
+    for (size_t idx = 0; idx < NTRU_P; idx++)
+    {
+        C_vec[idx] = modulo(C_vec[idx], NTT_Q);
+    }
+
+    /**
      * @brief Reduce the integer coefficients mod 4591 and store the result.
      * 
      * This loop iterates over the first 761 integer coefficients, reduces them
