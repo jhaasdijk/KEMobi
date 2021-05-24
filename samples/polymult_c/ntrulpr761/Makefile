@@ -1,11 +1,13 @@
 TARGET  = ${notdir ${CURDIR}}
 SRC_DIR = .
 C_FILES = ${wildcard ${SRC_DIR}/*.c}
+S_FILES = ${wildcard ${SRC_DIR}/*.s}
 OBJ = ${C_FILES:.c=.o}
+ASM = ${S_FILES:.s=.o}
 
 default : all
 
-${TARGET} : ${OBJ}
+${TARGET} : ${OBJ} ${ASM}
 	@echo "Linking" $@ "from" $^ "..."
 	${LD} ${LDFLAGS} -o $@ $^ ${LDLIBS}
 
