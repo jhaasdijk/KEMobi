@@ -6,21 +6,6 @@
  * to use wrapper for both the forward and inverse NTT.
  */
 
-void forward_layer_1(int32_t *coefficients)
-{
-    unsigned int length = 256, ridx = 0;
-    int temp;
-
-    int32_t zeta = roots[ridx];
-
-    for (size_t idx = 0; idx < length; idx++)
-    {
-        temp = multiply_reduce(zeta, coefficients[idx + length]);
-        coefficients[idx + length] = coefficients[idx] - temp;
-        coefficients[idx] = coefficients[idx] + temp;
-    }
-}
-
 void forward_layer_2(int32_t *coefficients)
 {
     unsigned int length = 128, ridx = 1;
