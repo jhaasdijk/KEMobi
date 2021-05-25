@@ -24,6 +24,9 @@ OBJDUMP = objdump
 # Turn on all optimizations specified by -O2 and more
 OPT = -O3 -march=native -mcpu=cortex-a72
 
+# Additional flags that need to be added explicitly
+EXP = -fomit-frame-pointer
+
 # Turn on extended warnings
 WAR = -Wall -Wextra -Wmissing-prototypes -Wredundant-decls\
 	-Wstrict-prototypes -Wundef -Wshadow -Wconversion -Wfloat-equal\
@@ -36,7 +39,7 @@ STD = -std=gnu17
 # Generate a GNU Make dependency output file
 DEP = -MD
 
-CFLAGS = ${OPT} ${WAR} ${STD} ${DEP}
+CFLAGS = ${OPT} ${EXP} ${WAR} ${STD} ${DEP}
 
 LDFLAGS = -Wl,--start-group -lc -lgcc -Wl,--end-group\
 	-Wl,--gc-sections,--print-gc-sections
