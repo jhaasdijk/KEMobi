@@ -113,34 +113,34 @@ forward_layer_1:
 
     // ret lr
 
-    stp	x29, x30, [sp, #-48]!
-    mov	x29, sp
-    stp	x19, x20, [sp, #16]
-    mov	x19, x0
-    add	x20, x0, #0x400
-    str	x21, [sp, #32]
+    stp     x29, x30, [sp, #-48]!
+    mov	    x29, sp
+    stp	    x19, x20, [sp, #16]
+    mov	    x19, x0
+    add	    x20, x0, #0x400
+    str	    x21, [sp, #32]
 
     // Move the value of ZETA into register r21
-    mov	w21, #0xd19a
-    movk w21, #0x65, lsl #16
+    mov	    w21, #0xd19a
+    movk    w21, #0x65, lsl #16
 
     loop:
-    ldr	w1, [x19, #1024]
-    mov	w0, w21
+    ldr	    w1, [x19, #1024]
+    mov	    w0, w21
 
     /*  multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, Q_inv, Q */
     multiply_reduce x0, w0, w1, w2, w1
 
-    ldr	w1, [x19]
-    sub	w2, w1, w0
-    add	w1, w1, w0
-    str	w2, [x19, #1024]
-    str	w1, [x19], #4
-    cmp	x20, x19
+    ldr	    w1, [x19]
+    sub	    w2, w1, w0
+    add	    w1, w1, w0
+    str	    w2, [x19, #1024]
+    str	    w1, [x19], #4
+    cmp	    x20, x19
 
     b.ne loop
 
-    ldp	x19, x20, [sp, #16]
-    ldr	x21, [sp, #32]
-    ldp	x29, x30, [sp], #48
+    ldp	    x19, x20, [sp, #16]
+    ldr	    x21, [sp, #32]
+    ldp	    x29, x30, [sp], #48
     ret
