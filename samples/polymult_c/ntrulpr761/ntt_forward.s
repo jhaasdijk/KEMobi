@@ -54,38 +54,39 @@
 .equ ZETA, 6672794
 .equ LENGTH, 256
 
-// void forward_layer_1(int32_t *coefficients)
-// {
-//     int32_t temp;
-//
-//     for (size_t idx = 0; idx < LENGTH; idx++)
-//     {
-//         temp = multiply_reduce(ZETA, coefficients[idx + LENGTH]);
-//         coefficients[idx + LENGTH] = coefficients[idx] - temp;
-//         coefficients[idx] = coefficients[idx] + temp;
-//     }
-// }
-//
-// This function executes 256 subtractions and 256 additions. The integer
-// coefficients are stored as int32_t which means that we can operate on 4
-// values simultaneously using the 128 bit SIMD registers. We should therefore
-// be able to bring this down to 64 subtractions and 64 additions.
-//
-// (We are ignoring the cost of the call to multiply_reduce as this is not part
-// of the local function. We are also ignoring the load/store overhead)
-//
-// ASIMD arith instructions (ADD / SUB)
-// Execution Latency    : 3
-// Execution Throughput : 2
-//
-// This means that *). Operations dependent on ASIMD arith instructions need to
-// wait at least 3 cycles before being able to use the result, and that *). The
-// maximum number of ASIMD arith instructions that can be processed per cycle is
-// 2.
-//
-// This means that the absolute (unrealistic) lower bound of what we can achieve
-// within the forward_layer_1 function is 64 cycles (128 ASIMD arith
-// instructions / 2).
+/* void forward_layer_1(int32_t *coefficients)
+ * {
+ *     int32_t temp;
+ *
+ *     for (size_t idx = 0; idx < LENGTH; idx++)
+ *     {
+ *         temp = multiply_reduce(ZETA, coefficients[idx + LENGTH]);
+ *         coefficients[idx + LENGTH] = coefficients[idx] - temp;
+ *         coefficients[idx] = coefficients[idx] + temp;
+ *     }
+ * }
+ *
+ * This function executes 256 subtractions and 256 additions. The integer
+ * coefficients are stored as int32_t which means that we can operate on 4
+ * values simultaneously using the 128 bit SIMD registers. We should therefore
+ * be able to bring this down to 64 subtractions and 64 additions.
+ *
+ * (We are ignoring the cost of the call to multiply_reduce as this is not part
+ * of the local function. We are also ignoring the load/store overhead)
+ *
+ * ASIMD arith instructions (ADD / SUB)
+ * Execution Latency    : 3
+ * Execution Throughput : 2
+ *
+ * This means that *). Operations dependent on ASIMD arith instructions need to
+ * wait at least 3 cycles before being able to use the result, and that *). The
+ * maximum number of ASIMD arith instructions that can be processed per cycle is
+ * 2.
+ *
+ * This means that the absolute (unrealistic) lower bound of what we can achieve
+ * within the forward_layer_1 function is 64 cycles (128 ASIMD arith
+ * instructions / 2).
+ */
 
 forward_layer_1:
 
