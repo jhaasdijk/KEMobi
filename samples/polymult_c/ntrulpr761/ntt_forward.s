@@ -49,19 +49,14 @@
     lsr     \out,    \out,     #32            // out := out >> 32
 .endm
 
-/* Declare constant values */
-
-.equ ZETA, 6672794
-.equ LENGTH, 256
-
 /* void forward_layer_1(int32_t *coefficients)
  * {
  *     int32_t temp;
  *
- *     for (size_t idx = 0; idx < LENGTH; idx++)
+ *     for (size_t idx = 0; idx < 256; idx++)
  *     {
- *         temp = multiply_reduce(ZETA, coefficients[idx + LENGTH]);
- *         coefficients[idx + LENGTH] = coefficients[idx] - temp;
+ *         temp = multiply_reduce(6672794, coefficients[idx + 256]);
+ *         coefficients[idx + 256] = coefficients[idx] - temp;
  *         coefficients[idx] = coefficients[idx] + temp;
  *     }
  * }
@@ -90,58 +85,59 @@
 
 forward_layer_1:
 
-    // w1 is our 23 bit constant multiplicand. This is stored in the
-    // parameter/result register r1. We can do this because multiply_reduce
-    // takes 2 arguments (the multiplicands) but will only return 1 result. Note
-    // that the move instruction is only able to insert 16 bit immediate values
-    // into its destination. We therefore need to split it up into a move of the
-    // lower 16 bits and a move (with keep) of the upper 7 bits.
-    //
-    // w9 is going to be our 'size_t idx' loop counter. This is stored in the
-    // temporary register r9.
-    //
-    // Since both values are smaller than 32 bits we can use the 32 bit general
-    // purpose registers.
+    /*
+     * TODO : Think about register usage (e.g. use r0...r7 for intermediate
+     * values as much as possible, this potentialy saves us from having to store
+     * callee-saved registers)
+     */
 
-    // // Move the value of ZETA into register r1
-    // mov w1, #0xd19a
-    // movk w1, #0x65, lsl #16
+    /*
+     * We are using 3 callee-saved registers (x19, x20, x21). Therefore we need
+     * to ensure that their current values are stored on the stack. We do the
+     * same for the procedure call link register (x30).
+     */
+    stp	    x19, x20, [sp, #-32]!
+    mov	    x19, x0                 // Move coefficients[0] into register X19
+    add	    x20, x0, #0x400         // Store coefficients[256] for comparison
+    stp	    x21, x30, [sp, #16]
 
-    // // Move the value of LENGTH into register r9
-    // mov w9, LENGTH
-
-    // b multiply_reduce
-
-    // ret lr
-
-    stp     x29, x30, [sp, #-48]!
-    mov	    x29, sp
-    stp	    x19, x20, [sp, #16]
-    mov	    x19, x0
-    add	    x20, x0, #0x400
-    str	    x21, [sp, #32]
-
-    // Move the value of ZETA into register r21
+    /*
+     * Move the first root (6672794) into register R21. Note that the move
+     * instruction is only able to insert 16 bit immediate values into its
+     * destination. We therefore need to split it up into a move of the lower 16
+     * bits and a move (with keep) of the upper 7 bits.
+     */
     mov	    w21, #0xd19a
     movk    w21, #0x65, lsl #16
 
     loop:
-    ldr	    w1, [x19, #1024]
-    mov	    w0, w21
 
-    /*  multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, Q_inv, Q */
+    /*
+     * We need to provide multiply_reduce with the correct arguments. We move
+     * the root into register W0 and coefficients[idx + 256] into register W1.
+     * The latter is done using a pre-index 32-bit load instruction, i.e. the
+     * address calculated is used immediately and does not replace the base
+     * register.
+     */
+    mov	    w0, w21
+    ldr	    w1, [x19, #1024]
+
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, Q_inv, Q */
     multiply_reduce x0, w0, w1, w2, w1
 
-    ldr	    w1, [x19]
-    sub	    w2, w1, w0
-    add	    w1, w1, w0
-    str	    w2, [x19, #1024]
-    str	    w1, [x19], #4
-    cmp	    x20, x19
+    ldr	    w1, [x19]        // Load coefficients[idx] into register W1
+    sub	    w2, w1, w0       // coefficients[idx] - temp
+    add	    w1, w1, w0       // coefficients[idx] + temp
+    str	    w2, [x19, #1024] // Store coefficients[idx + 256]
+    str	    w1, [x19], #4    // Store coefficients[idx] and move to next element
+    cmp	    x20, x19         // Compare this element with coefficients[256]
 
-    b.ne loop
+    b.ne    loop
 
-    ldp	    x19, x20, [sp, #16]
-    ldr	    x21, [sp, #32]
-    ldp	    x29, x30, [sp], #48
+    /*
+     * Restore the callee-saved registers and the procedure call link register
+     * before returning control to our caller.
+     */
+    ldp	    x21, x30, [sp, #16]
+    ldp	    x19, x20, [sp], #32
     ret
