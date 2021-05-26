@@ -342,12 +342,12 @@ void inverse_layer_1(int32_t *coefficients)
 
 /**
  * @brief Compute the iterative inplace forward NTT of a polynomial.
- * 
+ *
  * @details This function can be used to compute the iterative inplace forward
  * NTT of a polynomial represented by its integer coefficients. It wraps the
  * earlier defined per-layer forward transformations into a single, easy to use
  * function.
- * 
+ *
  * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
  * @param[in] mod The modulo used to reduce each integer value
  */
@@ -367,12 +367,12 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
 
 /**
  * @brief Compute the iterative inplace inverse NTT of a polynomial.
- * 
+ *
  * @details This function can be used to compute the iterative inplace inverse
  * NTT of a polynomial represented by its integer coefficients. It wraps the
  * earlier defined per-layer inverse transformations into a single, easy to use
  * function.
- * 
+ *
  * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
  * @param[in] mod The modulo used to reduce each integer value
  */
@@ -386,7 +386,7 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
 
     /**
      * @brief Ensure that the coefficients stay within their allocated 32 bits
-     * 
+     *
      * Due to how the inverse NTT transformation is calculated, each layer
      * increases the possible bitsize of the integer coefficients by 1.
      * Performing 9 layers increases the possible bitsize of the integer

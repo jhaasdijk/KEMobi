@@ -8,13 +8,13 @@
 
 /**
  * @brief Perform the forward Good's permutation.
- * 
+ *
  * @details This function can be used to deconstruct an array of integer
  * coefficients into smaller NTT friendly sizes. Currently this function is used
  * to deconstruct a size-GPR array into GP0 size-GP1 NTTs.
- * 
+ *
  * @param[out] forward Deconstructed smaller NTT friendly GP0xGP1 matrix.
- * @param[in] coefficients Zero padded array of integer coefficients. 
+ * @param[in] coefficients Zero padded array of integer coefficients.
  */
 void goods_forward(int32_t forward[GP0][GP1], int32_t *coefficients)
 {
@@ -34,12 +34,12 @@ void goods_forward(int32_t forward[GP0][GP1], int32_t *coefficients)
 
 /**
  * @brief Perform the inverse Good's permutation.
- * 
+ *
  * @details This function can be used to construct an array of integer
  * coefficients from a deconstructed smaller NTT friendly matrix. Currently this
  * function is used to construct a size-GPR array from GP0 size-GP1 NTTs.
- * 
- * @param[out] coefficients Zero padded array of integer coefficients. 
+ *
+ * @param[out] coefficients Zero padded array of integer coefficients.
  * @param[in] forward Deconstructed smaller NTT friendly GP0xGP1 matrix.
  */
 void goods_inverse(int32_t *coefficients, int32_t forward[GP0][GP1])

@@ -18,7 +18,7 @@
 
 /**
  * @brief Define the parameters for the Good's permutation
- * 
+ *
  * We can use Good's trick to deconstruct our 'clunky' NTT into 3 size-512 NTTs
  * after zero-padding our integer arrays (polynomials) to size 1536.
  */
@@ -29,7 +29,7 @@
 
 /**
  * @brief Define the parameters for the NTT transformation
- * 
+ *
  * These 3 smaller size-512 cyclic NTTs are used to multiply polynomials in
  * Z_6984193 [x] / (x^512 - 1).
  */
@@ -40,7 +40,7 @@
 /*
  * Since we are using Montgomery reduction to efficiently calculate the modular
  * multiplication of two multiplicands, we need to calculate q^-1 mod 2^32.
- * 
+ *
  * NTT_Q^-1 modulo 2^width = 6984193^-1 modulo 2^32 = 1926852097
  */
 
@@ -50,13 +50,13 @@
  * The accumulated factor that needs to be multiplied with to complete the
  * inverse NTT transformation. We can calculate this value using 2^{-lay} mod q,
  * where lay is equal to the number of layers.
- * 
+ *
  * 2^{-lay} mod q = 2^{-9} mod 6984193 = 512^-1 mod 6984193 = 6970552
- * 
+ *
  * Since we want to multiply this factor using Montgomery modular multiplication
  * we need to ensure that the factor is in the Montgomery domain. We can
  * calculate this value like this:
- * 
+ *
  * (factor * 2^32) % NTT_Q = (6970552 * 4294967296) % 6984193 = 1404415
  */
 

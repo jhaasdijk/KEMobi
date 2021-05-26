@@ -4,7 +4,7 @@
  * This source can be used to perform NTT based polynomial multiplication. We
  * execute a known value test to verify its functionality and correctness. We
  * are computing:
- * 
+ *
  * poly_one * poly_two % (x^761 - x - 1) % 4591
  */
 
@@ -27,7 +27,7 @@ int main()
 
     /**
      * @brief Compute the forward Good's permutation.
-     * 
+     *
      * This deconstructs the 'clunky' zero padded arrays of integer coefficients
      * into 3 size-512 NTTs.
      */
@@ -39,7 +39,7 @@ int main()
 
     /**
      * @brief Compute the iterative inplace forward NTTs.
-     * 
+     *
      * This computes the forward NTT transformation of our size-512 polynomials.
      */
 
@@ -51,16 +51,16 @@ int main()
 
     /**
      * @brief Compute the point-wise multiplication of the integer coefficients.
-     * 
+     *
      * Be careful with these smaller polynomial multiplications. We are not
      * actually computing the result 'point-wise'. Instead we multiply two
      * degree 2 polynomials and reduce the result mod (x^3 - 1). E.g.:
-     * 
+     *
      * (
      *   { F[0][0], F[1][0], F[2][0] } *
      *   { G[0][0], G[1][0], G[2][0] }
      * ) % (X^3 - 1)
-     * 
+     *
      * = C[0][0], C[1][0], C[2][0]
      */
 
@@ -103,7 +103,7 @@ int main()
 
     /**
      * @brief Compute the iterative inplace inverse NTT.
-     * 
+     *
      * This computes the inverse NTT transformation of our size-512 polynomials.
      */
 
@@ -114,7 +114,7 @@ int main()
 
     /**
      * @brief Compute the inverse Good's permutation.
-     * 
+     *
      * This undoes the forward Good's permutation and constructs an array of
      * integer coefficients from the deconstructed smaller NTT friendly matrix.
      */
@@ -131,7 +131,7 @@ int main()
 
     /**
      * @brief Ensure the result is correct in the integer domain.
-     * 
+     *
      * Before we can further reduce the integer coefficients we need to ensure
      * that the result is correct in the integer domain. We therefore reduce all
      * 761 integer coefficients mod 6984193.
@@ -144,7 +144,7 @@ int main()
 
     /**
      * @brief Reduce the integer coefficients mod 4591 and store the result.
-     * 
+     *
      * This loop iterates over the first 761 integer coefficients, reduces them
      * mod 4591 and stores them. This removes the zero padding.
      */
@@ -174,7 +174,7 @@ int main()
 
     /**
      * @brief Read the current value of the processor cycle counter (after).
-     * 
+     *
      * This value is compared to the (before) value to compute the performance
      * of the current implemenatation considering CPU cycle count.
      */

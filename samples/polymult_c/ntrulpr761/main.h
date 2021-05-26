@@ -22,7 +22,7 @@
 
 /**
  * Define the (input, result) polynomials for our known value test.
- * 
+ *
  * 1. poly_one is a polynomial with integer coefficients in Z_q
  * 2. poly_two is a polynomial with integer coefficients in {-1, 0, 1}
  * 3. result is the expected result of the NTT based polynomial multiplication
