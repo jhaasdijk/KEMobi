@@ -22,31 +22,13 @@
  * {
  *     return montgomery_reduce((int64_t)x * y);
  * }
- *
- * <multiply_reduce>:
- *     smull    x0, w0, w1              // x0 := (int64_t) x * y
- *     mov	    w2, #0x6e01
- *     movk     w2, #0x72d9, lsl #16    // w2 := NTT_QINV = 1926852097
- *     mov	    w1, #0x6dff
- *     movk	    w1, #0xff95, lsl #16    // w1 := - NTT_Q  = 4287983103
- *     mul	    w2, w0, w2              // w2 := (int32_t) x * NTT_QINV
- *
- *                                      // x - (int64_t)(out * NTT_Q)  =
- *                                      // x + (int64_t)(out * -NTT_Q) =
- *     smaddl   x0, w2, w1, x0          // x0 := (w2 * w1) + x0
- *     lsr      x0, x0, #32             // x0 := x0 >> 32
  */
 
-/* Due to register naming this macro is a bit confusing at the moment */
-.macro multiply_reduce out, x, y, Q_inv, Q
-    smull   \out,    \x,       \y             // out := (int64_t) x * y
-    mov     \Q_inv,  #0x6e01
-    movk    \Q_inv,  #0x72d9,  lsl #16        // 1926852097 (= NTT_QINV)
-    mov     \Q,      #0x6dff
-    movk    \Q,      #0xff95,  lsl #16        // 4287983103 (= -NTT_Q)
-    mul     \Q_inv,  \x,       \Q_inv         // (int32_t) x * NTT_QINV
-    smaddl  \out,    \Q_inv,   \Q,      \out
-    lsr     \out,    \out,     #32            // out := out >> 32
+.macro multiply_reduce out, x, y
+    smull   \out,  \x,    \y              // (int64_t) x * y
+    mul     temp,  \x,    NTT_QINV        // (int32_t) x * NTT_QINV
+    smaddl  \out,  temp,  NTT_Q,    \out  // x - (int64_t) temp * NTT_Q
+    lsr     \out,  \out,  #32             // out >> 32
 .endm
 
 /* void forward_layer_1(int32_t *coefficients)
