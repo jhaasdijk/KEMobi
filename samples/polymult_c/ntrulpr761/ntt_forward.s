@@ -5,7 +5,10 @@
 /* Provide function declarations */
 
 .global forward_layer_1
+.global forward_layer_2
+
 .type forward_layer_1, %function
+.type forward_layer_2, %function
 
 /* Provide macro definitions */
 
@@ -146,3 +149,74 @@ forward_layer_1:
      * registers, our function epilogue is therefore simply: */
 
     ret     lr
+
+/*
+ * void forward_layer_2(int32_t *coefficients)
+ * {
+ *    int32_t temp;
+ *
+ *    for (size_t idx = 0; idx < 128; idx++)
+ *    {
+ *        temp = multiply_reduce(6672794, coefficients[idx + 128]);
+ *        coefficients[idx + 128] = coefficients[idx] - temp;
+ *        coefficients[idx] = coefficients[idx] + temp;
+ *    }
+ *
+ *    for (size_t idx = 256; idx < 384; idx++)
+ *    {
+ *        temp = multiply_reduce(3471433, coefficients[idx + 128]);
+ *        coefficients[idx + 128] = coefficients[idx] - temp;
+ *        coefficients[idx] = coefficients[idx] + temp;
+ *    }
+ * }
+ */
+
+forward_layer_2:
+    stp	    x19, x20, [sp, #-48]!
+    mov	    x20, x0
+    mov	    x19, x0
+    stp	    x21, x22, [sp, #16]
+    mov	    w22, #0xd19a
+    movk	w22, #0x65, lsl #16
+    add	    x21, x0, #0x200
+    str	    x30, [sp, #32]
+
+    loop1:
+    ldr	    w1, [x19, #512]
+    mov	    w0, w22
+
+    multiply_reduce x0 w0 w1
+
+    ldr	    w1, [x19]
+    sub	    w2, w1, w0
+    add	    w0, w0, w1
+    str	    w2, [x19, #512]
+    str	    w0, [x19], #4
+
+    cmp	    x19, x21
+    b.ne    loop1
+
+    add	    x19, x20, #0x400
+    mov	    w21, #0xf849
+    movk	w21, #0x34, lsl #16
+    add	    x20, x20, #0x600
+
+    loop2:
+    ldr	    w1, [x19, #512]
+    mov	    w0, w21
+
+    multiply_reduce x0 w0 w1
+
+    ldr	    w1, [x19]
+    sub	    w2, w1, w0
+    add	    w0, w0, w1
+    str	    w2, [x19, #512]
+    str	    w0, [x19], #4
+
+    cmp	    x20, x19
+    b.ne    loop2
+
+    ldp	    x21, x22, [sp, #16]
+    ldr	    x30, [sp, #32]
+    ldp	    x19, x20, [sp], #48
+    ret

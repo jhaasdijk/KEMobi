@@ -44,7 +44,7 @@ static const int32_t roots_inv[NTT_P - 1] = {6672794, 3512760, 4391985, 2894487,
 
 extern void forward_layer_1(int32_t *coefficients);
 
-void forward_layer_2(int32_t *coefficients);
+extern void forward_layer_2(int32_t *coefficients);
 
 void forward_layer_3(int32_t *coefficients);
 
