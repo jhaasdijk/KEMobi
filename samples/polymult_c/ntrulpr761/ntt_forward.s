@@ -67,59 +67,80 @@
 
 forward_layer_1:
 
-    /*
-     * TODO : Think about register usage (e.g. use r0...r7 for intermediate
-     * values as much as possible, this potentialy saves us from having to store
-     * callee-saved registers)
-     */
+    /* Due to our choice of registers we do not need (to store) callee-saved
+     * registers. Neither do we use the procedure link register, as we do not
+     * branch to any functions from within this subroutine. The function
+     * prologue is therefore empty. */
 
-    /*
-     * We are using 3 callee-saved registers (x19, x20, x21). Therefore we need
-     * to ensure that their current values are stored on the stack. We do the
-     * same for the procedure call link register (x30).
-     */
-    stp	    x19, x20, [sp, #-32]!
-    mov	    x19, x0                 // Move coefficients[0] into register X19
-    add	    x20, x0, #0x400         // Store coefficients[256] for comparison
-    stp	    x21, x30, [sp, #16]
+    mov     x10, x0             // Store *coefficients[0]
+    add     x11, x0, #0x400     // Store *coefficients[256] for comparison
 
-    /*
-     * Move the first root (6672794) into register R21. Note that the move
+    /* Alias registers for a specific purpose (and readability) */
+
+    root    .req w12    // Use temporary register W12 to store our roots
+    temp    .req w13    // Use register W13 as a generic temporary store
+
+    NTT_QINV    .req w14    // Use temporary register W14 to store NTT_QINV
+    NTT_Q       .req w15    // Use temporary register W15 to store -NTT_Q
+
+    mov     NTT_QINV, #0x6e01
+    movk    NTT_QINV, #0x72d9, lsl #16  // 1926852097 (= NTT_QINV)
+    mov     NTT_Q, #0x6dff
+    movk    NTT_Q, #0xff95, lsl #16     // 4287983103 (= -NTT_Q)
+
+    /* Move the first root (6672794) into register W12. Note that the move
      * instruction is only able to insert 16 bit immediate values into its
      * destination. We therefore need to split it up into a move of the lower 16
-     * bits and a move (with keep) of the upper 7 bits.
-     */
-    mov	    w21, #0xd19a
-    movk    w21, #0x65, lsl #16
+     * bits and a move (with keep) of the upper 7 bits. */
+
+    mov     root, #0xd19a
+    movk    root, #0x65, lsl #16
 
     loop:
 
-    /*
-     * We need to provide multiply_reduce with the correct arguments. We move
-     * the root into register W0 and coefficients[idx + 256] into register W1.
-     * The latter is done using a pre-index 32-bit load instruction, i.e. the
-     * address calculated is used immediately and does not replace the base
-     * register.
-     */
-    mov	    w0, w21
-    ldr	    w1, [x19, #1024]
+    /* We need to provide multiply_reduce with the correct arguments. The root
+     * (singular) is already in place. We move the coefficients into registers
+     * W0, W1, W2 and W3. This is done using a pre-index 32-bit load
+     * instruction, i.e. the address calculated is used immediately and does not
+     * replace the base register. */
 
-    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, Q_inv, Q */
-    multiply_reduce x0, w0, w1, w2, w1
+    ldr	    w0, [x10, #1024]
+    ldr	    w1, [x10, #1028]
+    ldr	    w2, [x10, #1032]
+    ldr	    w3, [x10, #1036]
 
-    ldr	    w1, [x19]        // Load coefficients[idx] into register W1
-    sub	    w2, w1, w0       // coefficients[idx] - temp
-    add	    w1, w1, w0       // coefficients[idx] + temp
-    str	    w2, [x19, #1024] // Store coefficients[idx + 256]
-    str	    w1, [x19], #4    // Store coefficients[idx] and move to next element
-    cmp	    x20, x19         // Compare this element with coefficients[256]
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
 
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
+
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+
+    mov     v0.s[0] , w0
+    mov     v0.s[1] , w1
+    mov     v0.s[2] , w2
+    mov     v0.s[3] , w3
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #1024]    // Store coefficients[_ + 256]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    /* It's cool to see that we can directly compare X10 (X0) and X11 (X0 +
+     * #0x400). This is due to the fact that we are working with pointers and
+     * not actual values. This allows us to do cheap equality checks without
+     * having to execute load instructions. */
+
+    cmp     x11, x10            // Compare offset with *coefficients[256]
     b.ne    loop
 
-    /*
-     * Restore the callee-saved registers and the procedure call link register
-     * before returning control to our caller.
-     */
-    ldp	    x21, x30, [sp, #16]
-    ldp	    x19, x20, [sp], #32
-    ret
+    /* Restore any callee-saved registers (and possibly the procedure call link
+     * register) before returning control to our caller. We avoided using such
+     * registers, our function epilogue is therefore simply: */
+
+    ret     lr
