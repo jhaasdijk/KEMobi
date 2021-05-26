@@ -31,7 +31,8 @@
     lsr     \out,  \out,  #32             // out >> 32
 .endm
 
-/* void forward_layer_1(int32_t *coefficients)
+/*
+ * void forward_layer_1(int32_t *coefficients)
  * {
  *     int32_t temp;
  *
@@ -75,6 +76,7 @@ forward_layer_1:
     mov     x10, x0             // Store *coefficients[0]
     add     x11, x0, #0x400     // Store *coefficients[256] for comparison
 
+    // TODO : Move this outside of a specific layer and into ntt_forward()
     /* Alias registers for a specific purpose (and readability) */
 
     root    .req w12    // Use temporary register W12 to store our roots
