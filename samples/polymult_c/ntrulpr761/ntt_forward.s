@@ -172,51 +172,90 @@ forward_layer_1:
  */
 
 forward_layer_2:
-    stp	    x19, x20, [sp, #-48]!
-    mov	    x20, x0
-    mov	    x19, x0
-    stp	    x21, x22, [sp, #16]
-    mov	    w22, #0xd19a
-    movk	w22, #0x65, lsl #16
-    add	    x21, x0, #0x200
-    str	    x30, [sp, #32]
 
-    loop1:
-    ldr	    w1, [x19, #512]
-    mov	    w0, w22
+    mov     x10, x0             // Store *coefficients[0]
+    add     x11, x0, #0x200     // Store *coefficients[128] for comparison
 
-    multiply_reduce x0 w0 w1
+    /* Move root[1] = 6672794 into register W12 */
+    /* Note that we could skip this as root[0] == root[1] */
 
-    ldr	    w1, [x19]
-    sub	    w2, w1, w0
-    add	    w0, w0, w1
-    str	    w2, [x19, #512]
-    str	    w0, [x19], #4
+    mov     root, #0xd19a
+    movk    root, #0x65, lsl #16
 
-    cmp	    x19, x21
-    b.ne    loop1
+    loop128_0:
 
-    add	    x19, x20, #0x400
-    mov	    w21, #0xf849
-    movk	w21, #0x34, lsl #16
-    add	    x20, x20, #0x600
+    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
 
-    loop2:
-    ldr	    w1, [x19, #512]
-    mov	    w0, w21
+    ldr	    w0, [x10, #512]
+    ldr	    w1, [x10, #516]
+    ldr	    w2, [x10, #520]
+    ldr	    w3, [x10, #524]
 
-    multiply_reduce x0 w0 w1
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
 
-    ldr	    w1, [x19]
-    sub	    w2, w1, w0
-    add	    w0, w0, w1
-    str	    w2, [x19, #512]
-    str	    w0, [x19], #4
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
 
-    cmp	    x20, x19
-    b.ne    loop2
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
 
-    ldp	    x21, x22, [sp, #16]
-    ldr	    x30, [sp, #32]
-    ldp	    x19, x20, [sp], #48
-    ret
+    mov     v0.s[0] , w0
+    mov     v0.s[1] , w1
+    mov     v0.s[2] , w2
+    mov     v0.s[3] , w3
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #512]     // Store coefficients[_ + 128]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    cmp     x11, x10            // Compare offset with *coefficients[128]
+    b.ne    loop128_0
+
+    add     x10, x11, #0x200    // Store *coefficients[256]
+    add     x11, x11, #0x400    // Store *coefficients[384] for comparison
+
+    /* Move root[2] = 3471433 into register W12 */
+
+    mov	    root, #0xf849
+    movk    root, #0x34, lsl #16
+
+    loop128_1:
+
+    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+
+    ldr	    w0, [x10, #512]
+    ldr	    w1, [x10, #516]
+    ldr	    w2, [x10, #520]
+    ldr	    w3, [x10, #524]
+
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
+
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
+
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+
+    mov     v0.s[0] , w0
+    mov     v0.s[1] , w1
+    mov     v0.s[2] , w2
+    mov     v0.s[3] , w3
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #512]     // Store coefficients[_ + 128]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    cmp     x11, x10            // Compare offset with *coefficients[384]
+    b.ne    loop128_1
+
+    ret     lr
