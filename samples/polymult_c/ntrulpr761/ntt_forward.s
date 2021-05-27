@@ -101,7 +101,7 @@ forward_layer_1:
     mov     root, #0xd19a
     movk    root, #0x65, lsl #16
 
-    loop:
+    loop256_0:
 
     /* We need to provide multiply_reduce with the correct arguments. The root
      * (singular) is already in place. We move the coefficients into registers
@@ -142,7 +142,7 @@ forward_layer_1:
      * having to execute load instructions. */
 
     cmp     x11, x10            // Compare offset with *coefficients[256]
-    b.ne    loop
+    b.ne    loop256_0
 
     /* Restore any callee-saved registers (and possibly the procedure call link
      * register) before returning control to our caller. We avoided using such
