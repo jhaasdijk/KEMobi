@@ -27,11 +27,37 @@
  * }
  */
 
+/* Multiply x, y and reduce the result using Montgomery reduction */
 .macro multiply_reduce out, x, y
     smull   \out,  \x,    \y              // (int64_t) x * y
     mul     temp,  \x,    NTT_QINV        // (int32_t) x * NTT_QINV
     smaddl  \out,  temp,  NTT_Q,    \out  // x - (int64_t) temp * NTT_Q
     lsr     \out,  \out,  #32             // out >> 32
+.endm
+
+/* Load 4 consecutive 32-bit integer coefficients */
+.macro load_values w0, w1, w2, w3, addr, offset
+    ldr	    \w0, [\addr, \offset]
+    ldr	    \w1, [\addr, \offset + 4]
+    ldr	    \w2, [\addr, \offset + 8]
+    ldr	    \w3, [\addr, \offset + 12]
+.endm
+
+/* Move 4 32-bit integer coefficients into a SIMD register */
+.macro move_values_into_vector w0, w1, w2, w3, v0
+    mov     \v0[0], \w0
+    mov     \v0[1], \w1
+    mov     \v0[2], \w2
+    mov     \v0[3], \w3
+.endm
+
+/* Perform the ASIMD arith instructions for a forward butterfly */
+.macro asimd_arith lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset
+    ldr     \lowerQt, [\addr]           // Load the lower coefficients
+    sub     \upperS4, \lowerS4, \temp   // coefficients[idx] - temp
+    add     \lowerS4, \lowerS4, \temp   // coefficients[idx] + temp
+    str     \upperQt, [\addr, \offset]  // Store the upper coefficients
+    str     \lowerQt, [\addr], #16      // Store the lower coefficients and move to next chunk
 .endm
 
 /*
@@ -184,12 +210,9 @@ forward_layer_2:
 
     loop128_0:
 
-    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    /* Load 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
 
-    ldr	    w0, [x10, #512]
-    ldr	    w1, [x10, #516]
-    ldr	    w2, [x10, #520]
-    ldr	    w3, [x10, #524]
+    load_values w0, w1, w2, w3, x10, #512
 
     /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
 
@@ -200,18 +223,12 @@ forward_layer_2:
 
     /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
 
-    mov     v0.s[0] , w0
-    mov     v0.s[1] , w1
-    mov     v0.s[2] , w2
-    mov     v0.s[3] , w3
+    move_values_into_vector w0, w1, w2, w3, v0.s
 
     /* Perform ASIMD arith instructions */
+    /* asimd_arith lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset */
 
-    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
-    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
-    add     v1.4s, v1.4s, v0.4s // coefficients + temp
-    str     q2, [x10, #512]     // Store coefficients[_ + 128]
-    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+    asimd_arith q1, v1.4s, q2, v2.4s, v0.4s, x10, #512
 
     cmp     x11, x10            // Compare offset with *coefficients[128]
     b.ne    loop128_0
@@ -226,12 +243,9 @@ forward_layer_2:
 
     loop128_1:
 
-    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    /* Load 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
 
-    ldr	    w0, [x10, #512]
-    ldr	    w1, [x10, #516]
-    ldr	    w2, [x10, #520]
-    ldr	    w3, [x10, #524]
+    load_values w0, w1, w2, w3, x10, #512
 
     /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
 
@@ -242,18 +256,12 @@ forward_layer_2:
 
     /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
 
-    mov     v0.s[0] , w0
-    mov     v0.s[1] , w1
-    mov     v0.s[2] , w2
-    mov     v0.s[3] , w3
+    move_values_into_vector w0, w1, w2, w3, v0.s
 
     /* Perform ASIMD arith instructions */
+    /* asimd_arith lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset */
 
-    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
-    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
-    add     v1.4s, v1.4s, v0.4s // coefficients + temp
-    str     q2, [x10, #512]     // Store coefficients[_ + 128]
-    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+    asimd_arith q1, v1.4s, q2, v2.4s, v0.4s, x10, #512
 
     cmp     x11, x10            // Compare offset with *coefficients[384]
     b.ne    loop128_1
