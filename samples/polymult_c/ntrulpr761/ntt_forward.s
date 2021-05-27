@@ -93,10 +93,10 @@ forward_layer_1:
     mov     NTT_Q, #0x6dff
     movk    NTT_Q, #0xff95, lsl #16     // 4287983103 (= -NTT_Q)
 
-    /* Move the first root (6672794) into register W12. Note that the move
-     * instruction is only able to insert 16 bit immediate values into its
-     * destination. We therefore need to split it up into a move of the lower 16
-     * bits and a move (with keep) of the upper 7 bits. */
+    /* Move root[0] = 6672794 into register W12. Note that the move instruction
+     * is only able to insert 16 bit immediate values into its destination. We
+     * therefore need to split it up into a move of the lower 16 bits and a move
+     * (with keep) of the upper 7 bits. */
 
     mov     root, #0xd19a
     movk    root, #0x65, lsl #16
