@@ -46,7 +46,7 @@ extern void forward_layer_1(int32_t *coefficients);
 
 extern void forward_layer_2(int32_t *coefficients);
 
-void forward_layer_3(int32_t *coefficients);
+extern void forward_layer_3(int32_t *coefficients);
 
 void forward_layer_4(int32_t *coefficients);
 

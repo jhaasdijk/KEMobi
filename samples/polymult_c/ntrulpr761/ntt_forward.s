@@ -6,9 +6,11 @@
 
 .global forward_layer_1
 .global forward_layer_2
+.global forward_layer_3
 
 .type forward_layer_1, %function
 .type forward_layer_2, %function
+.type forward_layer_3, %function
 
 /* Provide macro definitions */
 
@@ -265,5 +267,167 @@ forward_layer_2:
 
     cmp     x11, x10            // Compare offset with *coefficients[384]
     b.ne    loop128_1
+
+    ret     lr
+
+/*
+ * void forward_layer_3(int32_t *coefficients)
+ * {
+ *     int32_t temp;
+ *
+ *     for (size_t idx = 0; idx < 64; idx++)
+ *     {
+ *         temp = multiply_reduce(6672794, coefficients[idx + 64]);
+ *         coefficients[idx + 64] = coefficients[idx] - temp;
+ *         coefficients[idx] = coefficients[idx] + temp;
+ *     }
+ *     for (size_t idx = 128; idx < 192; idx++)
+ *     {
+ *         temp = multiply_reduce(3471433, coefficients[idx + 64]);
+ *         coefficients[idx + 64] = coefficients[idx] - temp;
+ *         coefficients[idx] = coefficients[idx] + temp;
+ *     }
+ *     for (size_t idx = 256; idx < 320; idx++)
+ *     {
+ *         temp = multiply_reduce(4089706, coefficients[idx + 64]);
+ *         coefficients[idx + 64] = coefficients[idx] - temp;
+ *         coefficients[idx] = coefficients[idx] + temp;
+ *     }
+ *     for (size_t idx = 384; idx < 448; idx++)
+ *     {
+ *         temp = multiply_reduce(2592208, coefficients[idx + 64]);
+ *         coefficients[idx + 64] = coefficients[idx] - temp;
+ *         coefficients[idx] = coefficients[idx] + temp;
+ *     }
+ * }
+ */
+
+forward_layer_3:
+
+    mov     x10, x0             // Store *coefficients[0]
+    add     x11, x0, #0x100     // Store *coefficients[64] for comparison
+    mov     root, #0xd19a       // Move root[3] = 6672794 into register W12
+    movk    root, #0x65, lsl #16
+
+    loop64_0:
+
+    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    load_values w0, w1, w2, w3, x10, #256
+
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
+
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+    move_values_into_vector w0, w1, w2, w3, v0.s
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #256]     // Store coefficients[_ + 64]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    cmp     x11, x10            // Compare offset with *coefficients[64]
+    b.ne    loop64_0
+
+    add     x10, x11, #0x100    // Store *coefficients[128]
+    add     x11, x11, #0x200    // Store *coefficients[192] for comparison
+    mov	    root, #0xf849       // Move root[4] = 3471433 into register W12
+    movk    root, #0x34, lsl #16
+
+    loop64_1:
+
+    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    load_values w0, w1, w2, w3, x10, #256
+
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
+
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+    move_values_into_vector w0, w1, w2, w3, v0.s
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #256]     // Store coefficients[_ + 128]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    cmp     x11, x10            // Compare offset with *coefficients[128]
+    b.ne    loop64_1
+
+    add     x10, x11, #0x100    // Store *coefficients[256]
+    add     x11, x11, #0x200    // Store *coefficients[320] for comparison
+
+    /* Move root[5] = 4089706 into register W12 */
+
+    mov	    root, #0x676a
+    movk    root, #0x3e, lsl #16
+
+    loop64_2:
+
+    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    load_values w0, w1, w2, w3, x10, #256
+
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
+
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+    move_values_into_vector w0, w1, w2, w3, v0.s
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #256]     // Store coefficients[_ + 128]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    cmp     x11, x10            // Compare offset with *coefficients[128]
+    b.ne    loop64_2
+
+    add     x10, x11, #0x100    // Store *coefficients[384]
+    add     x11, x11, #0x200    // Store *coefficients[448] for comparison
+
+    /* Move root[6] = 2592208 into register W12 */
+
+    mov	    root, #0x8dd0
+    movk    root, #0x27, lsl #16
+
+    loop64_3:
+
+    /* Move 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    load_values w0, w1, w2, w3, x10, #256
+
+    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
+    multiply_reduce x0, w0, root
+    multiply_reduce x1, w1, root
+    multiply_reduce x2, w2, root
+    multiply_reduce x3, w3, root
+
+    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+    move_values_into_vector w0, w1, w2, w3, v0.s
+
+    /* Perform ASIMD arith instructions */
+
+    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
+    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
+    add     v1.4s, v1.4s, v0.4s // coefficients + temp
+    str     q2, [x10, #256]     // Store coefficients[_ + 128]
+    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
+
+    cmp     x11, x10            // Compare offset with *coefficients[128]
+    b.ne    loop64_3
 
     ret     lr
