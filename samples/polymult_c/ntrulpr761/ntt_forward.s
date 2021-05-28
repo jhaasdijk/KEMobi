@@ -218,10 +218,31 @@ forward_layer_2:
 
     /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
 
-    multiply_reduce x0, w0, root
-    multiply_reduce x1, w1, root
-    multiply_reduce x2, w2, root
-    multiply_reduce x3, w3, root
+    // TODO : Vectorize multiply_reduce
+
+    /* (int64_t) x * y */
+    smull   x0, w0, root
+    smull   x1, w1, root
+    smull   x2, w2, root
+    smull   x3, w3, root
+
+    /* temp = (int32_t) x * NTT_QINV */
+    mul     w4, w0, NTT_QINV
+    mul     w5, w1, NTT_QINV
+    mul     w6, w2, NTT_QINV
+    mul     w7, w3, NTT_QINV
+
+    /* x - (int64_t) temp * NTT_Q */
+    smaddl  x0, w4, NTT_Q, x0
+    smaddl  x1, w5, NTT_Q, x1
+    smaddl  x2, w6, NTT_Q, x2
+    smaddl  x3, w7, NTT_Q, x3
+
+    /* out >> 32 */
+    lsr     x0, x0, #32
+    lsr     x1, x1, #32
+    lsr     x2, x2, #32
+    lsr     x3, x3, #32
 
     /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
 
