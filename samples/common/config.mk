@@ -22,7 +22,7 @@ OBJCOPY = objcopy
 OBJDUMP = objdump
 
 # Turn on all optimizations specified by -O2 and more
-OPT = -O3 -march=native -mcpu=cortex-a72
+OPT = -O3 -march=armv8-a+simd -mtune=cortex-a72 -mcpu=cortex-a72+simd
 
 # Additional flags that need to be added explicitly
 EXP = -fomit-frame-pointer
