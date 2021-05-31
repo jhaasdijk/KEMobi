@@ -137,21 +137,19 @@ forward_layer_1:
      * instruction, i.e. the address calculated is used immediately and does not
      * replace the base register. */
 
-    // TODO : Fix this, it's currently not correct
-
     // mulhi(a, B) - mulhi(M * mullo(a, B'))
     // We are working with roots = [1] as this is the first forward layer
     // M = 6984193, M_inv = 1926852097, R = 2147483648 (= 2^31)
-    // B  = [(_ * R) % M for _ in roots]
-    // B' = [(_ * R * M_inv) % M for _ in roots]
+    // B  = b * R mod M              = [(_ * R) % M for _ in roots]
+    // B' = (b * R mod M) * M' mod R = [(_ * M_inv) % R for _ in B]
 
     ldr     q0, [x10, #1024]        // coefficients[_ + 256]
 
     mov     w5, #0xe8cd             // 3336397 = B[0]
     movk    w5, #0x32, lsl #16
 
-    mov     w6, #0x66f3             // 2909939 = B'[0]
-    movk    w6, #0x2c, lsl #16
+    mov     w6, #0xfecd             // -307 = B'[0]
+    movk    w6, #0x7fff, lsl #16
 
     mov     w7, #0x9201             // 6984193 = M
     movk    w7, #0x6a, lsl #16
