@@ -145,13 +145,13 @@ forward_layer_1:
 
     ldr     q0, [x10, #1024]        // coefficients[_ + 256]
 
-    mov     w5, #0xe8cd             // 3336397 = B[0]
+    mov     w5, #0xe8cd             // B[0] = 3336397
     movk    w5, #0x32, lsl #16
 
-    mov     w6, #0xfecd             // -307 = B'[0]
+    mov     w6, #0xfecd             // B'[0] = 2147483341
     movk    w6, #0x7fff, lsl #16
 
-    mov     w7, #0x9201             // 6984193 = M
+    mov     w7, #0x9201             // M = 6984193
     movk    w7, #0x6a, lsl #16
 
     mov     v1.4s[0], w5
