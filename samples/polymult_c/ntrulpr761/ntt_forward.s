@@ -137,24 +137,35 @@ forward_layer_1:
      * instruction, i.e. the address calculated is used immediately and does not
      * replace the base register. */
 
-    ldr	    w0, [x10, #1024]
-    ldr	    w1, [x10, #1028]
-    ldr	    w2, [x10, #1032]
-    ldr	    w3, [x10, #1036]
+    // TODO : Fix this, it's currently not correct
 
-    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
+    // mulhi(a, B) - mulhi(M * mullo(a, B'))
+    // We are working with roots = [1] as this is the first forward layer
+    // M = 6984193, M_inv = 1926852097, R = 2147483648 (= 2^31)
+    // B  = [(_ * R) % M for _ in roots]
+    // B' = [(_ * R * M_inv) % M for _ in roots]
 
-    multiply_reduce x0, w0, root
-    multiply_reduce x1, w1, root
-    multiply_reduce x2, w2, root
-    multiply_reduce x3, w3, root
+    ldr     q0, [x10, #1024]        // coefficients[_ + 256]
 
-    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
+    mov     w5, #0xe8cd             // 3336397 = B[0]
+    movk    w5, #0x32, lsl #16
 
-    mov     v0.s[0] , w0
-    mov     v0.s[1] , w1
-    mov     v0.s[2] , w2
-    mov     v0.s[3] , w3
+    mov     w6, #0x66f3             // 2909939 = B'[0]
+    movk    w6, #0x2c, lsl #16
+
+    mov     w7, #0x9201             // 6984193 = M
+    movk    w7, #0x6a, lsl #16
+
+    mov     v1.4s[0], w5
+    sqdmulh v2.4s, v0.4s, v1.4s[0]  // mulhi(a, B)
+
+    mov     v1.4s[0], w6
+    mul     v3.4s, v0.4s, v1.4s[0]  // mullo(a, B')
+
+    mov     v1.4s[0], w7
+    sqdmulh v3.4s, v3.4s, v1.4s[0]  // mulhi(M, _)
+
+    sub     v0.4s, v2.4s, v3.4s     // mulhi(a, B) - mulhi(M, _)
 
     /* Perform ASIMD arith instructions */
 
