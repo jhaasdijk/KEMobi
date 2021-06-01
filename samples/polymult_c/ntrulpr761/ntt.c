@@ -333,9 +333,9 @@ void inverse_layer_1(int32_t *coefficients)
  */
 void ntt_forward(int32_t *coefficients, int32_t mod)
 {
-    forward_layer_1(coefficients);
-    forward_layer_2(coefficients);
-    forward_layer_3(coefficients);
+    forward_layer_1(coefficients, B_origi, B_prime);
+    forward_layer_2(coefficients, B_origi, B_prime);
+    forward_layer_3(coefficients, B_origi, B_prime);
     forward_layer_4(coefficients);
     forward_layer_5(coefficients);
     forward_layer_6(coefficients);
