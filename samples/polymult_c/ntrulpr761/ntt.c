@@ -335,9 +335,9 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
 {
     __asm_forward_ntt_setup();
 
-    forward_layer_1(coefficients, B_origi, B_prime);
-    forward_layer_2(coefficients, B_origi, B_prime);
-    forward_layer_3(coefficients, B_origi, B_prime);
+    forward_layer_1(coefficients, MR_top, MR_bot);
+    forward_layer_2(coefficients, MR_top, MR_bot);
+    forward_layer_3(coefficients, MR_top, MR_bot);
     forward_layer_4(coefficients);
     forward_layer_5(coefficients);
     forward_layer_6(coefficients);

@@ -68,12 +68,11 @@ __asm_forward_ntt_setup:
 
     /* Alias registers for a specific purpose (and readability) */
 
-    B_lo        .req w5         // TODO : Explain usage
-    B_hi        .req w6         // TODO : Explain usage
-
-    temp        .req w12        // Use register W12 as a generic temporary store
+    MR_top      .req w6         // TODO : Explain usage
+    MR_bot      .req w7         // TODO : Explain usage
 
     M           .req w13        // Use temporary register W13 to store M
+
     NTT_QINV    .req w14        // Use temporary register W14 to store NTT_QINV
     NTT_Q       .req w15        // Use temporary register W15 to store -NTT_Q
 
