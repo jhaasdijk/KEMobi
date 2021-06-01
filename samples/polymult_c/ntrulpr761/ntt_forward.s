@@ -4,15 +4,15 @@
 
 /* Provide function declarations */
 
-.global __asm_forward_ntt_setup
-.global forward_layer_1
-.global forward_layer_2
-.global forward_layer_3
+.global __asm_ntt_forward_setup
+.global __asm_ntt_forward_layer_1
+.global __asm_ntt_forward_layer_2
+.global __asm_ntt_forward_layer_3
 
-.type __asm_forward_ntt_setup, %function
-.type forward_layer_1, %function
-.type forward_layer_2, %function
-.type forward_layer_3, %function
+.type __asm_ntt_forward_setup, %function
+.type __asm_ntt_forward_layer_1, %function
+.type __asm_ntt_forward_layer_2, %function
+.type __asm_ntt_forward_layer_3, %function
 
 /* Provide macro definitions */
 
@@ -64,7 +64,7 @@
     str     \lowerQt, [\addr], #16      // Store the lower coefficients and move to next chunk
 .endm
 
-__asm_forward_ntt_setup:
+__asm_ntt_forward_setup:
 
     /* Alias registers for a specific purpose (and readability) */
 
@@ -127,7 +127,7 @@ __asm_forward_ntt_setup:
  * instructions / 2).
  */
 
-forward_layer_1:
+__asm_ntt_forward_layer_1:
 
     /* Due to our choice of registers we do not need (to store) callee-saved
      * registers. Neither do we use the procedure link register, as we do not
@@ -187,7 +187,7 @@ forward_layer_1:
  * }
  */
 
-forward_layer_2:
+__asm_ntt_forward_layer_2:
 
     mov     x10, x0                 // Store *coefficients[0]
     add     x11, x0, #4 * 128       // Store *coefficients[128] for comparison
@@ -255,7 +255,7 @@ forward_layer_2:
  * }
  */
 
-forward_layer_3:
+__asm_ntt_forward_layer_3:
 
     mov     x10, x0                 // Store *coefficients[0]
     add     x11, x0, #4 * 64        // Store *coefficients[64] for comparison
