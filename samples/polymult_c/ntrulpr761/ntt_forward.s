@@ -189,92 +189,36 @@ forward_layer_1:
 
 forward_layer_2:
 
-    mov     x10, x0             // Store *coefficients[0]
-    add     x11, x0, #0x200     // Store *coefficients[128] for comparison
+    mov     x10, x0                 // Store *coefficients[0]
+    add     x11, x0, #4 * 128       // Store *coefficients[128] for comparison
 
-    /* Move root[1] = 6672794 into register W12 */
-    /* Note that we could skip this as root[0] == root[1] */
-
-    mov     root, #0xd19a
-    movk    root, #0x65, lsl #16
+    ldr     MR_top, [x1, #4 * 1]    // Store MR_top[1]
+    ldr     MR_bot, [x2, #4 * 1]    // Store MR_bot[1]
 
     loop128_0:
 
-    /* Load 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
 
-    load_values w0, w1, w2, w3, x10, #512
+    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, x10, #512
+    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, x10, #512
 
-    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
-
-    // TODO : Vectorize multiply_reduce
-
-    /* (int64_t) x * y */
-    smull   x0, w0, root
-    smull   x1, w1, root
-    smull   x2, w2, root
-    smull   x3, w3, root
-
-    /* temp = (int32_t) x * NTT_QINV */
-    mul     w4, w0, NTT_QINV
-    mul     w5, w1, NTT_QINV
-    mul     w6, w2, NTT_QINV
-    mul     w7, w3, NTT_QINV
-
-    /* x - (int64_t) temp * NTT_Q */
-    smaddl  x0, w4, NTT_Q, x0
-    smaddl  x1, w5, NTT_Q, x1
-    smaddl  x2, w6, NTT_Q, x2
-    smaddl  x3, w7, NTT_Q, x3
-
-    /* out >> 32 */
-    lsr     x0, x0, #32
-    lsr     x1, x1, #32
-    lsr     x2, x2, #32
-    lsr     x3, x3, #32
-
-    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
-
-    move_values_into_vector w0, w1, w2, w3, v0.s
-
-    /* Perform ASIMD arith instructions */
-    /* asimd_arith lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset */
-
-    asimd_arith q1, v1.4s, q2, v2.4s, v0.4s, x10, #512
-
-    cmp     x11, x10            // Compare offset with *coefficients[128]
+    cmp     x11, x10                // Compare offset with *coefficients[128]
     b.ne    loop128_0
 
-    add     x10, x11, #0x200    // Store *coefficients[256]
-    add     x11, x11, #0x400    // Store *coefficients[384] for comparison
+    add     x10, x11, #4 * 128      // Store *coefficients[256]
+    add     x11, x11, #4 * 256      // Store *coefficients[384] for comparison
 
-    /* Move root[2] = 3471433 into register W12 */
-
-    mov	    root, #0xf849
-    movk    root, #0x34, lsl #16
+    ldr     MR_top, [x1, #4 * 2]    // Store MR_top[2]
+    ldr     MR_bot, [x2, #4 * 2]    // Store MR_bot[2]
 
     loop128_1:
 
-    /* Load 4 32 bit integer coefficients into registers W0, W1, W2 and W3 */
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
 
-    load_values w0, w1, w2, w3, x10, #512
+    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, x10, #512
+    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, x10, #512
 
-    /* multiply_reduce (int64_t) out, (int32_t) x, (int32_t) y, (int32_t) temp */
-
-    multiply_reduce x0, w0, root
-    multiply_reduce x1, w1, root
-    multiply_reduce x2, w2, root
-    multiply_reduce x3, w3, root
-
-    /* The results are stored in W0, W1, W2, W3, move them into register Q0 */
-
-    move_values_into_vector w0, w1, w2, w3, v0.s
-
-    /* Perform ASIMD arith instructions */
-    /* asimd_arith lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset */
-
-    asimd_arith q1, v1.4s, q2, v2.4s, v0.4s, x10, #512
-
-    cmp     x11, x10            // Compare offset with *coefficients[384]
+    cmp     x11, x10                // Compare offset with *coefficients[384]
     b.ne    loop128_1
 
     ret     lr
