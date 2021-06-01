@@ -4,10 +4,12 @@
 
 /* Provide function declarations */
 
+.global __asm_forward_ntt_setup
 .global forward_layer_1
 .global forward_layer_2
 .global forward_layer_3
 
+.type __asm_forward_ntt_setup, %function
 .type forward_layer_1, %function
 .type forward_layer_2, %function
 .type forward_layer_3, %function
@@ -61,6 +63,35 @@
     str     \upperQt, [\addr, \offset]  // Store the upper coefficients
     str     \lowerQt, [\addr], #16      // Store the lower coefficients and move to next chunk
 .endm
+
+__asm_forward_ntt_setup:
+
+    /* Alias registers for a specific purpose (and readability) */
+
+    B_lo        .req w5         // TODO : Explain usage
+    B_hi        .req w6         // TODO : Explain usage
+
+    temp        .req w12        // Use register W12 as a generic temporary store
+
+    M           .req w13        // Use temporary register W13 to store M
+    NTT_QINV    .req w14        // Use temporary register W14 to store NTT_QINV
+    NTT_Q       .req w15        // Use temporary register W15 to store -NTT_Q
+
+    /* Initialize constant values. Note that the move instruction is only able
+     * to insert 16 bit immediate values into its destination. We therefore need
+     * to split it up into a move of the lower 16 bits and a move (with keep) of
+     * the upper 7 bits. */
+
+    mov     M, #0x9201          // 6984193    (= M)
+    movk    M, #0x6a, lsl #16
+
+    mov     NTT_QINV, #0x6e01   // 1926852097 (= NTT_QINV)
+    movk    NTT_QINV, #0x72d9, lsl #16
+
+    mov     NTT_Q, #0x6dff      // 4287983103 (= -NTT_Q)
+    movk    NTT_Q, #0xff95, lsl #16
+
+    ret lr
 
 /*
  * void forward_layer_1(int32_t *coefficients)

@@ -45,6 +45,8 @@ static int32_t B_prime[NTT_P - 1] = {2147483341, 2147483341, 1566747429, 2147483
 
 /* Provide function declarations */
 
+extern void __asm_forward_ntt_setup(void);
+
 extern void forward_layer_1(int32_t *coefficients, int32_t *B_origi, int32_t *B_prime);
 
 extern void forward_layer_2(int32_t *coefficients, int32_t *B_origi, int32_t *B_prime);

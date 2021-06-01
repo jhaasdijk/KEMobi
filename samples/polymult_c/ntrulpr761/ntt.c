@@ -333,6 +333,8 @@ void inverse_layer_1(int32_t *coefficients)
  */
 void ntt_forward(int32_t *coefficients, int32_t mod)
 {
+    __asm_forward_ntt_setup();
+
     forward_layer_1(coefficients, B_origi, B_prime);
     forward_layer_2(coefficients, B_origi, B_prime);
     forward_layer_3(coefficients, B_origi, B_prime);
