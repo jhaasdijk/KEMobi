@@ -56,7 +56,7 @@
 .endm
 
 /* Perform the ASIMD arith instructions for a forward butterfly */
-.macro asimd_arith lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset
+.macro _asimd_sub_add lowerQt, lowerS4, upperQt, upperS4, temp, addr, offset
     ldr     \lowerQt, [\addr]           // Load the lower coefficients
     sub     \upperS4, \lowerS4, \temp   // coefficients[idx] - temp
     add     \lowerS4, \lowerS4, \temp   // coefficients[idx] + temp
@@ -134,81 +134,30 @@ forward_layer_1:
      * branch to any functions from within this subroutine. The function
      * prologue is therefore empty. */
 
-    mov     x10, x0             // Store *coefficients[0]
-    add     x11, x0, #0x400     // Store *coefficients[256] for comparison
+    /* Store the coefficients pointer and an offset for comparison */
 
-    // TODO : Move this outside of a specific layer and into ntt_forward()
-    /* Alias registers for a specific purpose (and readability) */
+    mov     x10, x0                 // Store *coefficients[0]
+    add     x11, x0, #4 * 256       // Store *coefficients[256]
 
-    root    .req w12    // Use temporary register W12 to store our roots
-    temp    .req w13    // Use register W13 as a generic temporary store
+    /* Load the precomputed values for computing Montgomery mulhi, mullo */
 
-    NTT_QINV    .req w14    // Use temporary register W14 to store NTT_QINV
-    NTT_Q       .req w15    // Use temporary register W15 to store -NTT_Q
-
-    mov     NTT_QINV, #0x6e01
-    movk    NTT_QINV, #0x72d9, lsl #16  // 1926852097 (= NTT_QINV)
-    mov     NTT_Q, #0x6dff
-    movk    NTT_Q, #0xff95, lsl #16     // 4287983103 (= -NTT_Q)
-
-    /* Move root[0] = 6672794 into register W12. Note that the move instruction
-     * is only able to insert 16 bit immediate values into its destination. We
-     * therefore need to split it up into a move of the lower 16 bits and a move
-     * (with keep) of the upper 7 bits. */
-
-    mov     root, #0xd19a
-    movk    root, #0x65, lsl #16
+    ldr     MR_top, [x1, #4 * 0]    // Store MR_top[0]
+    ldr     MR_bot, [x2, #4 * 0]    // Store MR_bot[0]
 
     loop256_0:
 
-    /* We need to provide multiply_reduce with the correct arguments. The root
-     * (singular) is already in place. We move the coefficients into registers
-     * W0, W1, W2 and W3. This is done using a pre-index 32-bit load
-     * instruction, i.e. the address calculated is used immediately and does not
-     * replace the base register. */
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
 
-    // mulhi(a, B) - mulhi(M * mullo(a, B'))
-    // We are working with roots = [1] as this is the first forward layer
-    // M = 6984193, M_inv = 1926852097, R = 2147483648 (= 2^31)
-    // B  = b * R mod M              = [(_ * R) % M for _ in roots]
-    // B' = (b * R mod M) * M' mod R = [(_ * M_inv) % R for _ in B]
+    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, x10, #1024
+    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, x10, #1024
 
-    ldr     q0, [x10, #1024]        // coefficients[_ + 256]
+    /* Check to verify loop condition idx < 256. It's cool to see that we can
+     * directly compare X10 (X0) and X11 (X0 + #4 * 256). This is due to the
+     * fact that we are working with pointers and not actual values. This allows
+     * us to do cheap equality checks without having to execute load
+     * instructions. */
 
-    mov     w5, #0xe8cd             // B[0] = 3336397
-    movk    w5, #0x32, lsl #16
-
-    mov     w6, #0xfecd             // B'[0] = 2147483341
-    movk    w6, #0x7fff, lsl #16
-
-    mov     w7, #0x9201             // M = 6984193
-    movk    w7, #0x6a, lsl #16
-
-    mov     v1.4s[0], w5
-    sqdmulh v2.4s, v0.4s, v1.4s[0]  // mulhi(a, B)
-
-    mov     v1.4s[0], w6
-    mul     v3.4s, v0.4s, v1.4s[0]  // mullo(a, B')
-
-    mov     v1.4s[0], w7
-    sqdmulh v3.4s, v3.4s, v1.4s[0]  // mulhi(M, _)
-
-    sub     v0.4s, v2.4s, v3.4s     // mulhi(a, B) - mulhi(M, _)
-
-    /* Perform ASIMD arith instructions */
-
-    ldr     q1, [x10]           // Load coefficients[_ : _ + 3] into register Q1
-    sub     v2.4s, v1.4s, v0.4s // coefficients - temp
-    add     v1.4s, v1.4s, v0.4s // coefficients + temp
-    str     q2, [x10, #1024]    // Store coefficients[_ + 256]
-    str     q1, [x10], #16      // Store coefficients[_] and move to next chunk
-
-    /* It's cool to see that we can directly compare X10 (X0) and X11 (X0 +
-     * #0x400). This is due to the fact that we are working with pointers and
-     * not actual values. This allows us to do cheap equality checks without
-     * having to execute load instructions. */
-
-    cmp     x11, x10            // Compare offset with *coefficients[256]
+    cmp     x11, x10                // Compare offset with *coefficients[256]
     b.ne    loop256_0
 
     /* Restore any callee-saved registers (and possibly the procedure call link
