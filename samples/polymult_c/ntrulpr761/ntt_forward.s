@@ -99,7 +99,7 @@ __asm_forward_ntt_setup:
  *
  *     for (size_t idx = 0; idx < 256; idx++)
  *     {
- *         temp = multiply_reduce(6672794, coefficients[idx + 256]);
+ *         temp = multiply_reduce(zeta[0], coefficients[idx + 256]);
  *         coefficients[idx + 256] = coefficients[idx] - temp;
  *         coefficients[idx] = coefficients[idx] + temp;
  *     }
@@ -173,14 +173,14 @@ forward_layer_1:
  *
  *    for (size_t idx = 0; idx < 128; idx++)
  *    {
- *        temp = multiply_reduce(6672794, coefficients[idx + 128]);
+ *        temp = multiply_reduce(zeta[1], coefficients[idx + 128]);
  *        coefficients[idx + 128] = coefficients[idx] - temp;
  *        coefficients[idx] = coefficients[idx] + temp;
  *    }
  *
  *    for (size_t idx = 256; idx < 384; idx++)
  *    {
- *        temp = multiply_reduce(3471433, coefficients[idx + 128]);
+ *        temp = multiply_reduce(zeta[2], coefficients[idx + 128]);
  *        coefficients[idx + 128] = coefficients[idx] - temp;
  *        coefficients[idx] = coefficients[idx] + temp;
  *    }
@@ -230,25 +230,25 @@ forward_layer_2:
  *
  *     for (size_t idx = 0; idx < 64; idx++)
  *     {
- *         temp = multiply_reduce(6672794, coefficients[idx + 64]);
+ *         temp = multiply_reduce(zeta[3], coefficients[idx + 64]);
  *         coefficients[idx + 64] = coefficients[idx] - temp;
  *         coefficients[idx] = coefficients[idx] + temp;
  *     }
  *     for (size_t idx = 128; idx < 192; idx++)
  *     {
- *         temp = multiply_reduce(3471433, coefficients[idx + 64]);
+ *         temp = multiply_reduce(zeta[4], coefficients[idx + 64]);
  *         coefficients[idx + 64] = coefficients[idx] - temp;
  *         coefficients[idx] = coefficients[idx] + temp;
  *     }
  *     for (size_t idx = 256; idx < 320; idx++)
  *     {
- *         temp = multiply_reduce(4089706, coefficients[idx + 64]);
+ *         temp = multiply_reduce(zeta[5], coefficients[idx + 64]);
  *         coefficients[idx + 64] = coefficients[idx] - temp;
  *         coefficients[idx] = coefficients[idx] + temp;
  *     }
  *     for (size_t idx = 384; idx < 448; idx++)
  *     {
- *         temp = multiply_reduce(2592208, coefficients[idx + 64]);
+ *         temp = multiply_reduce(zeta[6], coefficients[idx + 64]);
  *         coefficients[idx + 64] = coefficients[idx] - temp;
  *         coefficients[idx] = coefficients[idx] + temp;
  *     }
