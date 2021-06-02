@@ -8,11 +8,13 @@
 .global __asm_ntt_forward_layer_1
 .global __asm_ntt_forward_layer_2
 .global __asm_ntt_forward_layer_3
+.global __asm_ntt_forward_layer_4
 
 .type __asm_ntt_forward_setup, %function
 .type __asm_ntt_forward_layer_1, %function
 .type __asm_ntt_forward_layer_2, %function
 .type __asm_ntt_forward_layer_3, %function
+.type __asm_ntt_forward_layer_4, %function
 
 /* Provide macro definitions */
 
@@ -330,5 +332,41 @@ __asm_ntt_forward_layer_3:
 
     cmp     length, start           // Compare offset with *coefficients[448]
     b.ne    loop64_3
+
+    ret     lr
+
+__asm_ntt_forward_layer_4:
+
+    mov     start, x0               // Store *coefficients[0]
+    add     length, x0, #4 * 32     // Store *coefficients[32] for comparison
+
+    /* Store layer specific values  */
+
+    add     x1, x1, #4 * 7          // ridx = 7, used for indexing B
+    add     x2, x2, #4 * 7          // ridx = 7, used for indexing B'
+    mov     x3, #8                  // loops = 8 (NTT_P / length / 2)
+
+    ldr     MR_top, [x1], #4        // Load precomputed B
+    ldr     MR_bot, [x2], #4        // Load precomputed B'
+
+    loop32:
+
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+
+    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #128
+    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #128
+
+    cmp     length, start           // Check if we have reached the next chunk
+    b.ne    loop32
+
+    add     start, length, #4 * 32  // Update pointer to next first coefficient
+    add     length, length, #4 * 64 // Update pointer to next last coefficient
+
+    ldr     MR_top, [x1], #4        // Load precomputed B
+    ldr     MR_bot, [x2], #4        // Load precomputed B'
+
+    sub     x3, x3, #1              // Decrement loop counter by 1
+    cmp     x3, #0                  // Check wether we are done
+    b.ne    loop32
 
     ret     lr
