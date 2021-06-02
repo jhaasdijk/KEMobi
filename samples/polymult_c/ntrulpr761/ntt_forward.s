@@ -39,7 +39,67 @@
     lsr     \out,  \out,  #32             // out >> 32
 .endm
 
-/* Load 4 consecutive 32-bit integer coefficients */
+
+/*
+ * Multiply a, b and reduce the result using Montgomery reduction. I.e. we are
+ * computing a · b = MR(a · (b · R mod M)). Since we are using known values for
+ * b (roots, roots_inv) we can precompute (b · R mod M).
+ *
+ * M = 6984193, R = 4294967296 (= 2^32)
+ *
+ * If we can calculate M' = M^-1 mod R, the computation becomes:
+ *
+ * (a · (b · R mod M) − ((a · (b · R mod M) mod R) · M' mod R) · M) / R
+ *
+ * Which we can rewrite as:
+ *
+ * (a · (b · R mod M) − M · (a · (b · R mod M) · M' mod R)) / R
+ *
+ * Notice how we now need to precompute two values, instead of one.
+ *
+ * B = (b · R mod M), and B' = ((b · R mod M) · M' mod R)
+ *
+ * However since we are using known values for b (roots, roots_inv) this is not
+ * a problem. We can perform this computation like this:
+ *
+ * Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+ *
+ * In NEON we have acces to a vectorized Mullo (MUL) but unfortunately not to a
+ * vectorized Mulhi. We can work around this issue by using the SQDMULH
+ * instruction and using R = 2^31 instead.
+ *
+ * (a · (b · R mod M) − M · (a · (b · R mod M) · M' mod R)) / R
+ *
+ * Then becomes:
+ *
+ * (2a · (b · R mod M) - 2M · (a · (b · R mod M) · M' mod R)) / 2R
+ *
+ * M = 6984193, M_inv = 1926852097, R = 2147483648 (= 2^31)
+ *
+ * To precompute the values in Python, execute the following:
+ *
+ * roots is a list with the original roots for the size - 512 cyclic NTT
+ * B  = b · R mod M              = [(_ * R) % M for _ in roots]
+ * B' = (b · R mod M) · M' mod R = [(_ * M_inv) % R for _ in B]
+ *
+ * Note that precomputation is not limited to the roots but can be performed for
+ * any known value.
+ */
+
+.macro _asimd_mul_red q0, v0, v1, v3, v4, addr, offset
+    ldr     \q0, [\addr, \offset]   // Load the upper coefficients
+    mov     \v1[0], MR_top          // Load precomputed B
+    sqdmulh \v3, \v0, \v1[0]        // Mulhi[a, B]
+    mov     \v1[0], MR_bot          // Load precomputed B'
+    mul     \v4, \v0, \v1[0]        // Mullo[a, B']
+    mov     \v1[0], M               // Load constant M
+    sqdmulh \v4, \v4, \v1[0]        // Mulhi[M, Mullo[a, B']]
+    sub     \v0, \v3, \v4           // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+.endm
+
+/* Load 4 consecutive 32-bit integer coefficients. This is done using a
+ * pre-index 32-bit load instruction, i.e. the address calculated is used
+ * immediately and does not replace the base register. */
 .macro load_values w0, w1, w2, w3, addr, offset
     ldr	    \w0, [\addr, \offset]
     ldr	    \w1, [\addr, \offset + 4]
