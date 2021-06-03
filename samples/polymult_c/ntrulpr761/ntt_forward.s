@@ -251,3 +251,109 @@ __asm_ntt_forward_layer_7:
     __asm_ntt_forward_layer 4, 63, 64
 
 
+/* length = 2, ridx = 127, loops = 128 */
+.global __asm_ntt_forward_layer_8
+.type __asm_ntt_forward_layer_8, %function
+__asm_ntt_forward_layer_8:
+
+    mov     start, x0               // Store *coefficients[0]
+    add     last, x0, #4 * 2        // Store *coefficients[length]
+
+    /* Store layer specific values  */
+
+    add     x1, x1, #4 * 127        // ridx, used for indexing B
+    add     x2, x2, #4 * 127        // ridx, used for indexing B'
+    mov     x3, #1 * 128            // loops (NTT_P / length / 2)
+
+    1:
+
+    ldr     MR_top, [x1], #4        // Load precomputed B
+    ldr     MR_bot, [x2], #4        // Load precomputed B'
+
+    /* -------------------- */
+
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+
+    ldr     d0, [start, #4 * 2]
+    mov     v1.2s[0], MR_top
+    sqdmulh v2.2s, v0.2s, v1.2s[0]
+    mov     v1.2s[0], MR_bot
+    mul     v3.2s, v0.2s, v1.2s[0]
+    mov     v1.2s[0], M
+    sqdmulh v3.2s, v3.2s, v1.2s[0]
+    sub     v0.2s, v2.2s, v3.2s
+
+    ldr     d1, [start]
+    sub     v2.2s, v1.2s, v0.2s
+    add     v1.2s, v1.2s, v0.2s
+    str     d2, [start, #4 * 2]
+    str     d1, [start], #4 * 2
+
+    /* -------------------- */
+
+    // cmp     last, start             // Check if we have reached the next chunk
+    // b.ne    1b
+
+    add     start, last, #4 * 2     // Update pointer to next first coefficient
+    add     last, last, #8 * 2      // Update pointer to next last coefficient
+
+    // ldr     MR_top, [x1], #4        // Load precomputed B
+    // ldr     MR_bot, [x2], #4        // Load precomputed B'
+
+    sub     x3, x3, #1              // Decrement loop counter by 1
+    cmp     x3, #0                  // Check wether we are done
+
+    b.ne    1b
+
+    ret     lr
+
+
+/* length = 1, ridx = 255, loops = 256 */
+.global __asm_ntt_forward_layer_9
+.type __asm_ntt_forward_layer_9, %function
+__asm_ntt_forward_layer_9:
+
+    mov     start, x0               // Store *coefficients[0]
+    add     last, x0, #4 * 1        // Store *coefficients[length]
+
+    /* Store layer specific values  */
+
+    add     x1, x1, #4 * 255        // ridx, used for indexing B
+    add     x2, x2, #4 * 255        // ridx, used for indexing B'
+    mov     x3, #1 * 256            // loops (NTT_P / length / 2)
+
+    1:
+
+    ldr     MR_top, [x1], #4        // Load precomputed B
+    ldr     MR_bot, [x2], #4        // Load precomputed B'
+
+    /* -------------------- */
+
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+
+    ldr     s0, [start, #4 * 1]
+    mov     v1.4s[0], MR_top
+    sqdmulh s2, s0, s1
+    mov     v1.4s[0], MR_bot
+    mul     v3.2s, v0.2s, v1.2s[0]
+    mov     v1.4s[0], M
+    sqdmulh s3, s3, s1
+    sub     d0, d2, d3
+
+    ldr     s1, [start]
+    sub     d2, d1, d0
+    add     d1, d1, d0
+    str     s2, [start, #4 * 1]
+    str     s1, [start], #4 * 1
+
+    /* -------------------- */
+
+    add     start, last, #4 * 1     // Update pointer to next first coefficient
+    add     last, last, #8 * 1      // Update pointer to next last coefficient
+
+    sub     x3, x3, #1              // Decrement loop counter by 1
+    cmp     x3, #0                  // Check wether we are done
+
+    b.ne    1b
+
+    ret     lr
