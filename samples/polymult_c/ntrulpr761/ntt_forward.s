@@ -252,8 +252,8 @@ __asm_ntt_forward_layer_7:
 
 
 /* length = 2, ridx = 127, loops = 128 */
-.global __asm_ntt_forward_layer_8
-.type __asm_ntt_forward_layer_8, %function
+// .global __asm_ntt_forward_layer_8
+// .type __asm_ntt_forward_layer_8, %function
 __asm_ntt_forward_layer_8:
 
     mov     start, x0               // Store *coefficients[0]
@@ -309,8 +309,8 @@ __asm_ntt_forward_layer_8:
 
 
 /* length = 1, ridx = 255, loops = 256 */
-.global __asm_ntt_forward_layer_9
-.type __asm_ntt_forward_layer_9, %function
+// .global __asm_ntt_forward_layer_9
+// .type __asm_ntt_forward_layer_9, %function
 __asm_ntt_forward_layer_9:
 
     mov     start, x0               // Store *coefficients[0]
