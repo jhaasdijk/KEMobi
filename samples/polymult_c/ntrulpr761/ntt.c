@@ -74,43 +74,77 @@ void forward_layer_9(int32_t *coefficients)
 
 void inverse_layer_9(int32_t *coefficients)
 {
-    unsigned int length = 1, ridx = 0;
-    unsigned int start, idx;
-    int temp;
+    unsigned int ridx = 0;
 
-    for (start = 0; start < NTT_P; start = idx + length)
+    for (size_t idx = 0; idx < 512; idx = idx + 8)
     {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
+        /* Load the required (precomputed) roots */
 
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
+        int32_t zeta_32 = roots_inv[ridx++];
+        int32_t zeta_64 = roots_inv[ridx++];
+        int32_t zeta_96 = roots_inv[ridx++];
+        int32_t zeta_128 = roots_inv[ridx++];
+
+        int32_t temp_32 = coefficients[idx + 0];
+        int32_t temp_64 = coefficients[idx + 2];
+        int32_t temp_96 = coefficients[idx + 4];
+        int32_t temp_128 = coefficients[idx + 6];
+
+        /* Execute 4 additions and 4 subtractions */
+
+        coefficients[idx + 0] = temp_32 + coefficients[idx + 1];
+        coefficients[idx + 2] = temp_64 + coefficients[idx + 3];
+        coefficients[idx + 4] = temp_96 + coefficients[idx + 5];
+        coefficients[idx + 6] = temp_128 + coefficients[idx + 7];
+
+        coefficients[idx + 1] = temp_32 - coefficients[idx + 1];
+        coefficients[idx + 3] = temp_64 - coefficients[idx + 3];
+        coefficients[idx + 5] = temp_96 - coefficients[idx + 5];
+        coefficients[idx + 7] = temp_128 - coefficients[idx + 7];
+
+        /* Execute 4 multiply_reduce operations */
+
+        coefficients[idx + 1] = multiply_reduce(zeta_32, coefficients[idx + 1]);
+        coefficients[idx + 3] = multiply_reduce(zeta_64, coefficients[idx + 3]);
+        coefficients[idx + 5] = multiply_reduce(zeta_96, coefficients[idx + 5]);
+        coefficients[idx + 7] = multiply_reduce(zeta_128, coefficients[idx + 7]);
     }
 }
 
 void inverse_layer_8(int32_t *coefficients)
 {
-    unsigned int length = 2, ridx = 256;
-    unsigned int start, idx;
-    int temp;
+    unsigned int ridx = 256;
 
-    for (start = 0; start < NTT_P; start = idx + length)
+    for (size_t idx = 0; idx < 512; idx = idx + 8)
     {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
+        /* Load the required (precomputed) roots */
 
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
+        int32_t zeta_32 = roots_inv[ridx++];
+        int32_t zeta_64 = roots_inv[ridx++];
+
+        int32_t temp_32 = coefficients[idx + 0];
+        int32_t temp_64 = coefficients[idx + 1];
+        int32_t temp_96 = coefficients[idx + 4];
+        int32_t temp_128 = coefficients[idx + 5];
+
+        /* Execute 4 additions and 4 subtractions */
+
+        coefficients[idx + 0] = temp_32 + coefficients[idx + 2];
+        coefficients[idx + 1] = temp_64 + coefficients[idx + 3];
+        coefficients[idx + 4] = temp_96 + coefficients[idx + 6];
+        coefficients[idx + 5] = temp_128 + coefficients[idx + 7];
+
+        coefficients[idx + 2] = temp_32 - coefficients[idx + 2];
+        coefficients[idx + 3] = temp_64 - coefficients[idx + 3];
+        coefficients[idx + 6] = temp_96 - coefficients[idx + 6];
+        coefficients[idx + 7] = temp_128 - coefficients[idx + 7];
+
+        /* Execute 4 multiply_reduce operations */
+
+        coefficients[idx + 2] = multiply_reduce(zeta_32, coefficients[idx + 2]);
+        coefficients[idx + 3] = multiply_reduce(zeta_32, coefficients[idx + 3]);
+        coefficients[idx + 6] = multiply_reduce(zeta_64, coefficients[idx + 6]);
+        coefficients[idx + 7] = multiply_reduce(zeta_64, coefficients[idx + 7]);
     }
 }
 
