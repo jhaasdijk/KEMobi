@@ -6,66 +6,6 @@
  * to use wrapper for both the forward and inverse NTT.
  */
 
-void forward_layer_5(int32_t *coefficients)
-{
-    unsigned int length = 16, ridx = 15;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = multiply_reduce(zeta, coefficients[idx + length]);
-            coefficients[idx + length] = coefficients[idx] - temp;
-            coefficients[idx] = coefficients[idx] + temp;
-        }
-    }
-}
-
-void forward_layer_6(int32_t *coefficients)
-{
-    unsigned int length = 8, ridx = 31;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = multiply_reduce(zeta, coefficients[idx + length]);
-            coefficients[idx + length] = coefficients[idx] - temp;
-            coefficients[idx] = coefficients[idx] + temp;
-        }
-    }
-}
-
-void forward_layer_7(int32_t *coefficients)
-{
-    unsigned int length = 4, ridx = 63;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = multiply_reduce(zeta, coefficients[idx + length]);
-            coefficients[idx + length] = coefficients[idx] - temp;
-            coefficients[idx] = coefficients[idx] + temp;
-        }
-    }
-}
-
 void forward_layer_8(int32_t *coefficients)
 {
     unsigned int length = 2, ridx = 127;
@@ -314,14 +254,15 @@ void inverse_layer_1(int32_t *coefficients)
 void ntt_forward(int32_t *coefficients, int32_t mod)
 {
     __asm_ntt_forward_setup();
+
     __asm_ntt_forward_layer_1(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_2(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_3(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_4(coefficients, MR_top, MR_bot);
+    __asm_ntt_forward_layer_5(coefficients, MR_top, MR_bot);
+    __asm_ntt_forward_layer_6(coefficients, MR_top, MR_bot);
+    __asm_ntt_forward_layer_7(coefficients, MR_top, MR_bot);
 
-    forward_layer_5(coefficients);
-    forward_layer_6(coefficients);
-    forward_layer_7(coefficients);
     forward_layer_8(coefficients);
     forward_layer_9(coefficients);
     reduce_coefficients(coefficients, mod);

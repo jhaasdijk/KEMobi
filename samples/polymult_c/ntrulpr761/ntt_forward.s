@@ -9,12 +9,18 @@
 .global __asm_ntt_forward_layer_2
 .global __asm_ntt_forward_layer_3
 .global __asm_ntt_forward_layer_4
+.global __asm_ntt_forward_layer_5
+.global __asm_ntt_forward_layer_6
+.global __asm_ntt_forward_layer_7
 
 .type __asm_ntt_forward_setup, %function
 .type __asm_ntt_forward_layer_1, %function
 .type __asm_ntt_forward_layer_2, %function
 .type __asm_ntt_forward_layer_3, %function
 .type __asm_ntt_forward_layer_4, %function
+.type __asm_ntt_forward_layer_5, %function
+.type __asm_ntt_forward_layer_6, %function
+.type __asm_ntt_forward_layer_7, %function
 
 /* Provide macro definitions */
 
@@ -214,195 +220,34 @@ __asm_ntt_forward_layer_1:
 
     ret     lr
 
-/*
- * void forward_layer_2(int32_t *coefficients)
- * {
- *    int32_t temp;
- *
- *    for (size_t idx = 0; idx < 128; idx++)
- *    {
- *        temp = multiply_reduce(zeta[1], coefficients[idx + 128]);
- *        coefficients[idx + 128] = coefficients[idx] - temp;
- *        coefficients[idx] = coefficients[idx] + temp;
- *    }
- *
- *    for (size_t idx = 256; idx < 384; idx++)
- *    {
- *        temp = multiply_reduce(zeta[2], coefficients[idx + 128]);
- *        coefficients[idx + 128] = coefficients[idx] - temp;
- *        coefficients[idx] = coefficients[idx] + temp;
- *    }
- * }
- */
 
+/* length = 128, ridx = 1, loops = 2 */
 __asm_ntt_forward_layer_2:
+    __asm_ntt_forward_layer 128, 1, 2
 
-    mov     start, x0               // Store *coefficients[0]
-    add     length, x0, #4 * 128    // Store *coefficients[128] for comparison
 
-    ldr     MR_top, [x1, #4 * 1]    // Store MR_top[1]
-    ldr     MR_bot, [x2, #4 * 1]    // Store MR_bot[1]
-
-    loop128_0:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #512
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #512
-
-    cmp     length, start           // Compare offset with *coefficients[128]
-    b.ne    loop128_0
-
-    add     start, length, #4 * 128     // Store *coefficients[256]
-    add     length, length, #4 * 256    // Store *coefficients[384] for comparison
-
-    ldr     MR_top, [x1, #4 * 2]    // Store MR_top[2]
-    ldr     MR_bot, [x2, #4 * 2]    // Store MR_bot[2]
-
-    loop128_1:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #512
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #512
-
-    cmp     length, start           // Compare offset with *coefficients[384]
-    b.ne    loop128_1
-
-    ret     lr
-
-/*
- * void forward_layer_3(int32_t *coefficients)
- * {
- *     int32_t temp;
- *
- *     for (size_t idx = 0; idx < 64; idx++)
- *     {
- *         temp = multiply_reduce(zeta[3], coefficients[idx + 64]);
- *         coefficients[idx + 64] = coefficients[idx] - temp;
- *         coefficients[idx] = coefficients[idx] + temp;
- *     }
- *     for (size_t idx = 128; idx < 192; idx++)
- *     {
- *         temp = multiply_reduce(zeta[4], coefficients[idx + 64]);
- *         coefficients[idx + 64] = coefficients[idx] - temp;
- *         coefficients[idx] = coefficients[idx] + temp;
- *     }
- *     for (size_t idx = 256; idx < 320; idx++)
- *     {
- *         temp = multiply_reduce(zeta[5], coefficients[idx + 64]);
- *         coefficients[idx + 64] = coefficients[idx] - temp;
- *         coefficients[idx] = coefficients[idx] + temp;
- *     }
- *     for (size_t idx = 384; idx < 448; idx++)
- *     {
- *         temp = multiply_reduce(zeta[6], coefficients[idx + 64]);
- *         coefficients[idx + 64] = coefficients[idx] - temp;
- *         coefficients[idx] = coefficients[idx] + temp;
- *     }
- * }
- */
-
+/* length = 64, ridx = 3, loops = 4 */
 __asm_ntt_forward_layer_3:
+    __asm_ntt_forward_layer 64, 3, 4
 
-    mov     start, x0               // Store *coefficients[0]
-    add     length, x0, #4 * 64     // Store *coefficients[64] for comparison
 
-    ldr     MR_top, [x1, #4 * 3]    // Store MR_top[3]
-    ldr     MR_bot, [x2, #4 * 3]    // Store MR_bot[3]
-
-    loop64_0:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #256
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #256
-
-    cmp     length, start           // Compare offset with *coefficients[64]
-    b.ne    loop64_0
-
-    add     start, length, #4 * 64      // Store *coefficients[128]
-    add     length, length, #4 * 128    // Store *coefficients[192] for comparison
-
-    ldr     MR_top, [x1, #4 * 4]    // Store MR_top[4]
-    ldr     MR_bot, [x2, #4 * 4]    // Store MR_bot[4]
-
-    loop64_1:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #256
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #256
-
-    cmp     length, start           // Compare offset with *coefficients[192]
-    b.ne    loop64_1
-
-    add     start, length, #4 * 64      // Store *coefficients[256]
-    add     length, length, #4 * 128    // Store *coefficients[320] for comparison
-
-    ldr     MR_top, [x1, #4 * 5]    // Store MR_top[5]
-    ldr     MR_bot, [x2, #4 * 5]    // Store MR_bot[5]
-
-    loop64_2:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #256
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #256
-
-    cmp     length, start           // Compare offset with *coefficients[320]
-    b.ne    loop64_2
-
-    add     start, length, #4 * 64      // Store *coefficients[384]
-    add     length, length, #4 * 128    // Store *coefficients[448] for comparison
-
-    ldr     MR_top, [x1, #4 * 6]    // Store MR_top[6]
-    ldr     MR_bot, [x2, #4 * 6]    // Store MR_bot[6]
-
-    loop64_3:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #256
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #256
-
-    cmp     length, start           // Compare offset with *coefficients[448]
-    b.ne    loop64_3
-
-    ret     lr
-
+/* length = 32, ridx = 7, loops = 8 */
 __asm_ntt_forward_layer_4:
+    __asm_ntt_forward_layer 32, 7, 8
 
-    mov     start, x0               // Store *coefficients[0]
-    add     length, x0, #4 * 32     // Store *coefficients[32] for comparison
 
-    /* Store layer specific values  */
+/* length = 16, ridx = 15, loops = 16 */
+__asm_ntt_forward_layer_5:
+    __asm_ntt_forward_layer 16, 15, 16
 
-    add     x1, x1, #4 * 7          // ridx = 7, used for indexing B
-    add     x2, x2, #4 * 7          // ridx = 7, used for indexing B'
-    mov     x3, #8                  // loops = 8 (NTT_P / length / 2)
 
-    ldr     MR_top, [x1], #4        // Load precomputed B
-    ldr     MR_bot, [x2], #4        // Load precomputed B'
+/* length = 8, ridx = 31, loops = 32 */
+__asm_ntt_forward_layer_6:
+    __asm_ntt_forward_layer 8, 31, 32
 
-    loop32:
 
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+/* length = 4, ridx = 63, loops = 64 */
+__asm_ntt_forward_layer_7:
+    __asm_ntt_forward_layer 4, 63, 64
 
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #128
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #128
 
-    cmp     length, start           // Check if we have reached the next chunk
-    b.ne    loop32
-
-    add     start, length, #4 * 32  // Update pointer to next first coefficient
-    add     length, length, #4 * 64 // Update pointer to next last coefficient
-
-    ldr     MR_top, [x1], #4        // Load precomputed B
-    ldr     MR_bot, [x2], #4        // Load precomputed B'
-
-    sub     x3, x3, #1              // Decrement loop counter by 1
-    cmp     x3, #0                  // Check wether we are done
-    b.ne    loop32
-
-    ret     lr
