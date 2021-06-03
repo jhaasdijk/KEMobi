@@ -124,7 +124,7 @@ __asm_ntt_forward_setup:
     /* Alias registers for a specific purpose (and readability) */
 
     start   .req x11    // Store pointer to the first integer coefficient
-    length  .req x12    // Store pointer to the last integer coefficient
+    last    .req x12    // Store pointer to the last integer coefficient
 
     MR_top  .req w13    // Store the precomputed B value for _asimd_mul_red
     MR_bot  .req w14    // Store the precomputed B' value for _asimd_mul_red
@@ -185,14 +185,14 @@ __asm_ntt_forward_layer_1:
     /* Store the coefficients pointer and an offset for comparison */
 
     mov     start, x0               // Store *coefficients[0]
-    add     length, x0, #4 * 256    // Store *coefficients[256]
+    add     last, x0, #4 * 256      // Store *coefficients[256]
 
     /* Load the precomputed values for computing Montgomery mulhi, mullo */
 
     ldr     MR_top, [x1, #4 * 0]    // Store MR_top[0]
     ldr     MR_bot, [x2, #4 * 0]    // Store MR_bot[0]
 
-    loop256_0:
+    loop256:
 
     /* Perform the ASIMD arithmetic instructions for a forward butterfly */
 
@@ -205,8 +205,8 @@ __asm_ntt_forward_layer_1:
      * us to do cheap equality checks without having to execute load
      * instructions. */
 
-    cmp     length, start           // Compare offset with *coefficients[256]
-    b.ne    loop256_0
+    cmp     last, start             // Compare offset with *coefficients[256]
+    b.ne    loop256
 
     /* Restore any callee-saved registers (and possibly the procedure call link
      * register) before returning control to our caller. We avoided using such
