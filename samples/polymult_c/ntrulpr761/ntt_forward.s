@@ -83,6 +83,42 @@
     str     \q1, [\addr], #16       // Store the lower coefficients and move to next chunk
 .endm
 
+.macro __asm_ntt_forward_layer length, ridx, loops
+    mov     start, x0                   // Store *coefficients[0]
+    add     last, x0, #4 * \length      // Store *coefficients[length]
+
+    /* Store layer specific values  */
+
+    add     x1, x1, #4 * \ridx          // ridx, used for indexing B
+    add     x2, x2, #4 * \ridx          // ridx, used for indexing B'
+    mov     x3, #1 * \loops             // loops (NTT_P / length / 2)
+
+    ldr     MR_top, [x1], #4            // Load precomputed B
+    ldr     MR_bot, [x2], #4            // Load precomputed B'
+
+    1:
+
+    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+
+    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #4 * \length
+    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #4 * \length
+
+    cmp     last, start                 // Check if we have reached the next chunk
+    b.ne    1b
+
+    add     start, last, #4 * \length   // Update pointer to next first coefficient
+    add     last, last, #8 * \length    // Update pointer to next last coefficient
+
+    ldr     MR_top, [x1], #4            // Load precomputed B
+    ldr     MR_bot, [x2], #4            // Load precomputed B'
+
+    sub     x3, x3, #1                  // Decrement loop counter by 1
+    cmp     x3, #0                      // Check wether we are done
+    b.ne    1b
+
+    ret     lr
+.endm
+
 __asm_ntt_forward_setup:
 
     /* Alias registers for a specific purpose (and readability) */
