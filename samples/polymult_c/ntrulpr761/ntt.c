@@ -19,22 +19,22 @@ void forward_layer_8(int32_t *coefficients)
 
         /* Execute 4 multiply_reduce operations */
 
-        int32_t temp_lo_64 = multiply_reduce(zeta64, coefficients[idx + 2]);
-        int32_t temp_hi_64 = multiply_reduce(zeta64, coefficients[idx + 3]);
-        int32_t temp_lo_128 = multiply_reduce(zeta128, coefficients[idx + 6]);
-        int32_t temp_hi_128 = multiply_reduce(zeta128, coefficients[idx + 7]);
+        int32_t temp_32 = multiply_reduce(zeta64, coefficients[idx + 2]);
+        int32_t temp_64 = multiply_reduce(zeta64, coefficients[idx + 3]);
+        int32_t temp_96 = multiply_reduce(zeta128, coefficients[idx + 6]);
+        int32_t temp_128 = multiply_reduce(zeta128, coefficients[idx + 7]);
 
         /* Execute 4 subtractions and 4 additions */
 
-        coefficients[idx + 2] = coefficients[idx + 0] - temp_lo_64;
-        coefficients[idx + 3] = coefficients[idx + 1] - temp_hi_64;
-        coefficients[idx + 6] = coefficients[idx + 4] - temp_lo_128;
-        coefficients[idx + 7] = coefficients[idx + 5] - temp_hi_128;
+        coefficients[idx + 2] = coefficients[idx + 0] - temp_32;
+        coefficients[idx + 3] = coefficients[idx + 1] - temp_64;
+        coefficients[idx + 6] = coefficients[idx + 4] - temp_96;
+        coefficients[idx + 7] = coefficients[idx + 5] - temp_128;
 
-        coefficients[idx + 0] = coefficients[idx + 0] + temp_lo_64;
-        coefficients[idx + 1] = coefficients[idx + 1] + temp_hi_64;
-        coefficients[idx + 4] = coefficients[idx + 4] + temp_lo_128;
-        coefficients[idx + 5] = coefficients[idx + 5] + temp_hi_128;
+        coefficients[idx + 0] = coefficients[idx + 0] + temp_32;
+        coefficients[idx + 1] = coefficients[idx + 1] + temp_64;
+        coefficients[idx + 4] = coefficients[idx + 4] + temp_96;
+        coefficients[idx + 5] = coefficients[idx + 5] + temp_128;
     }
 }
 
