@@ -148,158 +148,6 @@ void inverse_layer_8(int32_t *coefficients)
     }
 }
 
-void inverse_layer_7(int32_t *coefficients)
-{
-    unsigned int length = 4, ridx = 384;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
-    }
-}
-
-void inverse_layer_6(int32_t *coefficients)
-{
-    unsigned int length = 8, ridx = 448;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
-    }
-}
-
-void inverse_layer_5(int32_t *coefficients)
-{
-    unsigned int length = 16, ridx = 480;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
-    }
-}
-
-void inverse_layer_4(int32_t *coefficients)
-{
-    unsigned int length = 32, ridx = 496;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
-    }
-}
-
-void inverse_layer_3(int32_t *coefficients)
-{
-    unsigned int length = 64, ridx = 504;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
-    }
-}
-
-void inverse_layer_2(int32_t *coefficients)
-{
-    unsigned int length = 128, ridx = 508;
-    unsigned int start, idx;
-    int temp;
-
-    for (start = 0; start < NTT_P; start = idx + length)
-    {
-        int32_t zeta = roots_inv[ridx];
-        ridx = ridx + 1;
-
-        for (idx = start; idx < start + length; idx++)
-        {
-            temp = coefficients[idx];
-            coefficients[idx] = temp + coefficients[idx + length];
-            coefficients[idx + length] = temp - coefficients[idx + length];
-            coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-        }
-    }
-}
-
-void inverse_layer_1(int32_t *coefficients)
-{
-    unsigned int length = 256, ridx = 510;
-    int temp;
-
-    int32_t zeta = roots_inv[ridx];
-
-    for (size_t idx = 0; idx < length; idx++)
-    {
-        temp = coefficients[idx];
-        coefficients[idx] = temp + coefficients[idx + length];
-        coefficients[idx + length] = temp - coefficients[idx + length];
-        coefficients[idx + length] = multiply_reduce(zeta, coefficients[idx + length]);
-    }
-
-    /*
-     * Multiply the result with the accumulated factor to complete the inverse
-     * NTT transformation
-     */
-
-    for (size_t idx = 0; idx < NTT_P; idx++)
-    {
-        coefficients[idx] = multiply_reduce(FACTOR, coefficients[idx]);
-    }
-}
-
 /**
  * @brief Compute the iterative inplace forward NTT of a polynomial.
  *
@@ -342,11 +190,14 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
  */
 void ntt_inverse(int32_t *coefficients, int32_t mod)
 {
+    __asm_ntt_setup();
+
     inverse_layer_9(coefficients);
     inverse_layer_8(coefficients);
-    inverse_layer_7(coefficients);
-    inverse_layer_6(coefficients);
-    inverse_layer_5(coefficients);
+
+    __asm_ntt_inverse_layer_7(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_6(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_5(coefficients, MR_inv_top, MR_inv_bot);
 
     /**
      * @brief Ensure that the coefficients stay within their allocated 32 bits
@@ -362,9 +213,10 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
 
     reduce_coefficients(coefficients, mod);
 
-    inverse_layer_4(coefficients);
-    inverse_layer_3(coefficients);
-    inverse_layer_2(coefficients);
-    inverse_layer_1(coefficients);
+    __asm_ntt_inverse_layer_4(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_3(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_2(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_1(coefficients, MR_inv_top, MR_inv_bot);
+
     reduce_coefficients(coefficients, mod);
 }
