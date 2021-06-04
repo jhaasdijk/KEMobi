@@ -313,7 +313,7 @@ void inverse_layer_1(int32_t *coefficients)
  */
 void ntt_forward(int32_t *coefficients, int32_t mod)
 {
-    __asm_ntt_forward_setup();
+    __asm_ntt_setup();
 
     __asm_ntt_forward_layer_1(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_2(coefficients, MR_top, MR_bot);
@@ -322,8 +322,7 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
     __asm_ntt_forward_layer_5(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_6(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_7(coefficients, MR_top, MR_bot);
-    // __asm_ntt_forward_layer_8(coefficients, MR_top, MR_bot);
-    // __asm_ntt_forward_layer_9(coefficients, MR_top, MR_bot);
+
     forward_layer_8(coefficients);
     forward_layer_9(coefficients);
 

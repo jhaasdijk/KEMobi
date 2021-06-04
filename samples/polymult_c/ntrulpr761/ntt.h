@@ -45,27 +45,19 @@ static int32_t MR_bot[NTT_P - 1] = {2147483341, 2147483341, 1566747429, 21474833
 
 /* Provide function declarations */
 
-extern void __asm_ntt_forward_setup(void);
+extern void __asm_ntt_setup(void);
 
 extern void __asm_ntt_forward_layer_1(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-
 extern void __asm_ntt_forward_layer_2(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-
 extern void __asm_ntt_forward_layer_3(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-
 extern void __asm_ntt_forward_layer_4(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-
 extern void __asm_ntt_forward_layer_5(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-
 extern void __asm_ntt_forward_layer_6(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-
 extern void __asm_ntt_forward_layer_7(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
 
-// extern void __asm_ntt_forward_layer_8(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
-void forward_layer_8(int32_t *coefficients);
 
+void forward_layer_8(int32_t *coefficients);
 void forward_layer_9(int32_t *coefficients);
-// extern void __asm_ntt_forward_layer_9(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
 
 void inverse_layer_9(int32_t *coefficients);
 

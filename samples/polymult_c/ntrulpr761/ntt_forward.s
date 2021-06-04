@@ -4,7 +4,7 @@
 
 /* Provide function declarations */
 
-.global __asm_ntt_forward_setup
+.global __asm_ntt_setup
 .global __asm_ntt_forward_layer_1
 .global __asm_ntt_forward_layer_2
 .global __asm_ntt_forward_layer_3
@@ -13,7 +13,7 @@
 .global __asm_ntt_forward_layer_6
 .global __asm_ntt_forward_layer_7
 
-.type __asm_ntt_forward_setup, %function
+.type __asm_ntt_setup, %function
 .type __asm_ntt_forward_layer_1, %function
 .type __asm_ntt_forward_layer_2, %function
 .type __asm_ntt_forward_layer_3, %function
@@ -125,7 +125,7 @@
     ret     lr
 .endm
 
-__asm_ntt_forward_setup:
+__asm_ntt_setup:
 
     /* Alias registers for a specific purpose (and readability) */
 
