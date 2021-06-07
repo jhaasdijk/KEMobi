@@ -6,23 +6,13 @@
 
 .global __asm_ntt_inverse_layer_9
 .global __asm_ntt_inverse_layer_8
-.global __asm_ntt_inverse_layer_7
-.global __asm_ntt_inverse_layer_6
-.global __asm_ntt_inverse_layer_5
-.global __asm_ntt_inverse_layer_4
-.global __asm_ntt_inverse_layer_3
-.global __asm_ntt_inverse_layer_2
-.global __asm_ntt_inverse_layer_1
+.global __asm_ntt_inverse_layer_765
+.global __asm_ntt_inverse_layer_4321
 
 .type __asm_ntt_inverse_layer_9, %function
 .type __asm_ntt_inverse_layer_8, %function
-.type __asm_ntt_inverse_layer_7, %function
-.type __asm_ntt_inverse_layer_6, %function
-.type __asm_ntt_inverse_layer_5, %function
-.type __asm_ntt_inverse_layer_4, %function
-.type __asm_ntt_inverse_layer_3, %function
-.type __asm_ntt_inverse_layer_2, %function
-.type __asm_ntt_inverse_layer_1, %function
+.type __asm_ntt_inverse_layer_765, %function
+.type __asm_ntt_inverse_layer_4321, %function
 
 /* Provide macro definitions */
 
@@ -60,12 +50,12 @@
 
     /* Store layer specific values  */
 
-    add     x1, x1, #4 * \ridx          // ridx, used for indexing B
-    add     x2, x2, #4 * \ridx          // ridx, used for indexing B'
-    mov     x3, #1 * \loops             // loops (NTT_P / length / 2)
+    add     x3, x1, #4 * \ridx          // ridx, used for indexing B
+    add     x4, x2, #4 * \ridx          // ridx, used for indexing B'
+    mov     x5, #1 * \loops             // loops (NTT_P / length / 2)
 
-    ldr     MR_top, [x1], #4            // Load precomputed B
-    ldr     MR_bot, [x2], #4            // Load precomputed B'
+    ldr     MR_top, [x3], #4            // Load precomputed B
+    ldr     MR_bot, [x4], #4            // Load precomputed B'
 
     1:
 
@@ -80,14 +70,12 @@
     add     start, last, #4 * \length   // Update pointer to next first coefficient
     add     last, last, #8 * \length    // Update pointer to next last coefficient
 
-    ldr     MR_top, [x1], #4            // Load precomputed B
-    ldr     MR_bot, [x2], #4            // Load precomputed B'
+    ldr     MR_top, [x3], #4            // Load precomputed B
+    ldr     MR_bot, [x4], #4            // Load precomputed B'
 
-    sub     x3, x3, #1                  // Decrement loop counter by 1
-    cmp     x3, #0                      // Check wether we are done
+    sub     x5, x5, #1                  // Decrement loop counter by 1
+    cmp     x5, #0                      // Check wether we are done
     b.ne    1b
-
-    ret     lr
 .endm
 
 __asm_ntt_inverse_setup:
@@ -264,48 +252,41 @@ __asm_ntt_inverse_layer_8:
     ret     lr
 
 
-/* length = 4, ridx = 384, loops = 64 */
-__asm_ntt_inverse_layer_7:
+__asm_ntt_inverse_layer_765:
+
+    /* layer 7: length = 4, ridx = 384, loops = 64 */
     __asm_ntt_inverse_layer 4, 384, 64
 
-
-/* length = 8, ridx = 448, loops = 32 */
-__asm_ntt_inverse_layer_6:
+    /* layer 6: length = 8, ridx = 448, loops = 32 */
     __asm_ntt_inverse_layer 8, 448, 32
 
-
-/* length = 16, ridx = 480, loops = 16 */
-__asm_ntt_inverse_layer_5:
+    /* layer 5: length = 16, ridx = 480, loops = 16 */
     __asm_ntt_inverse_layer 16, 480, 16
 
+    ret     lr
 
-/* length = 32, ridx = 496, loops = 8 */
-__asm_ntt_inverse_layer_4:
+__asm_ntt_inverse_layer_4321:
+
+    /* layer 4: length = 32, ridx = 496, loops = 8 */
     __asm_ntt_inverse_layer 32, 496, 8
 
-
-/* length = 64, ridx = 504, loops = 4 */
-__asm_ntt_inverse_layer_3:
+    /* layer 3: length = 64, ridx = 504, loops = 4 */
     __asm_ntt_inverse_layer 64, 504, 4
 
-
-/* length = 128, ridx = 508, loops = 2 */
-__asm_ntt_inverse_layer_2:
+    /* layer 2: length = 128, ridx = 508, loops = 2 */
     __asm_ntt_inverse_layer 128, 508, 2
 
+    /* layer 1: length = 256, ridx = 510, loops = 1 */
 
-/* length = 256, ridx = 510, loops = 1 */
-__asm_ntt_inverse_layer_1:
-    mov     start, x0           // Store *coefficients[0]
-    add     last, x0, #4 * 256  // Store *coefficients[length]
+    mov     start, x0               // Store *coefficients[0]
+    add     last, x0, #4 * 256      // Store *coefficients[length]
 
     /* Store layer specific values  */
 
-    add     x1, x1, #4 * 510    // ridx, used for indexing B
-    add     x2, x2, #4 * 510    // ridx, used for indexing B'
-
-    ldr     MR_top, [x1], #4    // Load precomputed B
-    ldr     MR_bot, [x2], #4    // Load precomputed B'
+    add     x1, x1, #4 * 510        // ridx, used for indexing B
+    add     x2, x2, #4 * 510        // ridx, used for indexing B'
+    ldr     MR_top, [x1], #4        // Load precomputed B
+    ldr     MR_bot, [x2], #4        // Load precomputed B'
 
     1:
 
@@ -314,7 +295,7 @@ __asm_ntt_inverse_layer_1:
     _asimd_sub_add q0, q1, q2, v0.4s, v1.4s, v2.4s, start, #4 * 256
     _asimd_mul_red q1, v0.4s v1.4s v2.4s v3.4s, start, #4 * 256
 
-    cmp     last, start         // Check if we have reached the next chunk
+    cmp     last, start             // Check if we have reached the next chunk
     b.ne    1b
 
     /*
@@ -329,7 +310,7 @@ __asm_ntt_inverse_layer_1:
     mov     start, x0
     add     last, x0, #4 * 512
 
-    mov     MR_top, #0x0000     // 4194304
+    mov     MR_top, #0x0000         // 4194304
     movk    MR_top, #0x40, lsl #16
 
     mov     v3.4s[0], MR_top
@@ -337,7 +318,7 @@ __asm_ntt_inverse_layer_1:
 
     /*
         for (size_t idx = 0; idx < NTT_P; idx++)
-            coefficients[idx] = multiply_reduce(FACTOR, coefficients[idx]);
+            coefficients[idx] = multiply_reduce(4194304, coefficients[idx]);
      */
 
     2:

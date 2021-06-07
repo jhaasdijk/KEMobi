@@ -46,9 +46,8 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
 
     __asm_ntt_inverse_layer_9(coefficients, MR_inv_top, MR_inv_bot);
     __asm_ntt_inverse_layer_8(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_7(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_6(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_5(coefficients, MR_inv_top, MR_inv_bot);
+
+    __asm_ntt_inverse_layer_765(coefficients, MR_inv_top, MR_inv_bot);
 
     /**
      * @brief Ensure that the coefficients stay within their allocated 32 bits
@@ -64,10 +63,7 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
 
     reduce_coefficients(coefficients, mod);
 
-    __asm_ntt_inverse_layer_4(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_3(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_2(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_1(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_4321(coefficients, MR_inv_top, MR_inv_bot);
 
     reduce_coefficients(coefficients, mod);
 }
