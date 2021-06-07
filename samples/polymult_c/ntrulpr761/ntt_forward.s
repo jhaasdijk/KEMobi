@@ -5,24 +5,12 @@
 /* Provide function declarations */
 
 .global __asm_ntt_setup
-.global __asm_ntt_forward_layer_1
-.global __asm_ntt_forward_layer_2
-.global __asm_ntt_forward_layer_3
-.global __asm_ntt_forward_layer_4
-.global __asm_ntt_forward_layer_5
-.global __asm_ntt_forward_layer_6
-.global __asm_ntt_forward_layer_7
+.global __asm_ntt_forward_layer
 .global __asm_ntt_forward_layer_8
 .global __asm_ntt_forward_layer_9
 
 .type __asm_ntt_setup, %function
-.type __asm_ntt_forward_layer_1, %function
-.type __asm_ntt_forward_layer_2, %function
-.type __asm_ntt_forward_layer_3, %function
-.type __asm_ntt_forward_layer_4, %function
-.type __asm_ntt_forward_layer_5, %function
-.type __asm_ntt_forward_layer_6, %function
-.type __asm_ntt_forward_layer_7, %function
+.type __asm_ntt_forward_layer, %function
 .type __asm_ntt_forward_layer_8, %function
 .type __asm_ntt_forward_layer_9, %function
 
@@ -99,12 +87,12 @@
 
     /* Store layer specific values  */
 
-    add     x1, x1, #4 * \ridx          // ridx, used for indexing B
-    add     x2, x2, #4 * \ridx          // ridx, used for indexing B'
-    mov     x3, #1 * \loops             // loops (NTT_P / length / 2)
+    add     x3, x1, #4 * \ridx          // ridx, used for indexing B
+    add     x4, x2, #4 * \ridx          // ridx, used for indexing B'
+    mov     x5, #1 * \loops             // loops (NTT_P / length / 2)
 
-    ldr     MR_top, [x1], #4            // Load precomputed B
-    ldr     MR_bot, [x2], #4            // Load precomputed B'
+    ldr     MR_top, [x3], #4            // Load precomputed B
+    ldr     MR_bot, [x4], #4            // Load precomputed B'
 
     1:
 
@@ -119,14 +107,12 @@
     add     start, last, #4 * \length   // Update pointer to next first coefficient
     add     last, last, #8 * \length    // Update pointer to next last coefficient
 
-    ldr     MR_top, [x1], #4            // Load precomputed B
-    ldr     MR_bot, [x2], #4            // Load precomputed B'
+    ldr     MR_top, [x3], #4            // Load precomputed B
+    ldr     MR_bot, [x4], #4            // Load precomputed B'
 
-    sub     x3, x3, #1                  // Decrement loop counter by 1
-    cmp     x3, #0                      // Check wether we are done
+    sub     x5, x5, #1                  // Decrement loop counter by 1
+    cmp     x5, #0                      // Check wether we are done
     b.ne    1b
-
-    ret     lr
 .endm
 
 __asm_ntt_setup:
@@ -185,7 +171,9 @@ __asm_ntt_setup:
  * instructions / 2).
  */
 
-__asm_ntt_forward_layer_1:
+__asm_ntt_forward_layer:
+
+    /* layer 1: length = 256, ridx = 0, loops = 1 */
 
     /* Due to our choice of registers we do not need (to store) callee-saved
      * registers. Neither do we use the procedure link register, as we do not
@@ -199,15 +187,15 @@ __asm_ntt_forward_layer_1:
 
     /* Load the precomputed values for computing Montgomery mulhi, mullo */
 
-    ldr     MR_top, [x1, #4 * 0]    // Store MR_top[0]
-    ldr     MR_bot, [x2, #4 * 0]    // Store MR_bot[0]
+    ldr     MR_top, [x1, #4 * 0]    // Load precomputed B[0]
+    ldr     MR_bot, [x2, #4 * 0]    // Load precomputed B'[0]
 
-    loop256:
+    1:
 
     /* Perform the ASIMD arithmetic instructions for a forward butterfly */
 
-    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #1024
-    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #1024
+    _asimd_mul_red q0, v0.4s, v1.4s, v2.4s, v3.4s, start, #4 * 256
+    _asimd_sub_add q1, v1.4s, q2, v2.4s, v0.4s, start, #4 * 256
 
     /* Check to verify loop condition idx < 256. It's cool to see that we can
      * directly compare X10 (X0) and X11 (X0 + #4 * 256). This is due to the
@@ -216,43 +204,31 @@ __asm_ntt_forward_layer_1:
      * instructions. */
 
     cmp     last, start             // Compare offset with *coefficients[256]
-    b.ne    loop256
+    b.ne    1b
+
+    /* layer 2: length = 128, ridx = 1, loops = 2 */
+    __asm_ntt_forward_layer 128, 1, 2
+
+    /* layer 3: length = 64, ridx = 3, loops = 4 */
+    __asm_ntt_forward_layer 64, 3, 4
+
+    /* layer 4: length = 32, ridx = 7, loops = 8 */
+    __asm_ntt_forward_layer 32, 7, 8
+
+    /* layer 5: length = 16, ridx = 15, loops = 16 */
+    __asm_ntt_forward_layer 16, 15, 16
+
+    /* layer 6: length = 8, ridx = 31, loops = 32 */
+    __asm_ntt_forward_layer 8, 31, 32
+
+    /* layer 7: length = 4, ridx = 63, loops = 64 */
+    __asm_ntt_forward_layer 4, 63, 64
 
     /* Restore any callee-saved registers (and possibly the procedure call link
      * register) before returning control to our caller. We avoided using such
      * registers, our function epilogue is therefore simply: */
 
     ret     lr
-
-
-/* length = 128, ridx = 1, loops = 2 */
-__asm_ntt_forward_layer_2:
-    __asm_ntt_forward_layer 128, 1, 2
-
-
-/* length = 64, ridx = 3, loops = 4 */
-__asm_ntt_forward_layer_3:
-    __asm_ntt_forward_layer 64, 3, 4
-
-
-/* length = 32, ridx = 7, loops = 8 */
-__asm_ntt_forward_layer_4:
-    __asm_ntt_forward_layer 32, 7, 8
-
-
-/* length = 16, ridx = 15, loops = 16 */
-__asm_ntt_forward_layer_5:
-    __asm_ntt_forward_layer 16, 15, 16
-
-
-/* length = 8, ridx = 31, loops = 32 */
-__asm_ntt_forward_layer_6:
-    __asm_ntt_forward_layer 8, 31, 32
-
-
-/* length = 4, ridx = 63, loops = 64 */
-__asm_ntt_forward_layer_7:
-    __asm_ntt_forward_layer 4, 63, 64
 
 
 /* length = 2, ridx = 127, loops = 128 */
