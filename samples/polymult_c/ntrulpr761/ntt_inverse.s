@@ -4,6 +4,8 @@
 
 /* Provide function declarations */
 
+.global __asm_ntt_inverse_layer_9
+.global __asm_ntt_inverse_layer_8
 .global __asm_ntt_inverse_layer_7
 .global __asm_ntt_inverse_layer_6
 .global __asm_ntt_inverse_layer_5
@@ -12,6 +14,8 @@
 .global __asm_ntt_inverse_layer_2
 .global __asm_ntt_inverse_layer_1
 
+.type __asm_ntt_inverse_layer_9, %function
+.type __asm_ntt_inverse_layer_8, %function
 .type __asm_ntt_inverse_layer_7, %function
 .type __asm_ntt_inverse_layer_6, %function
 .type __asm_ntt_inverse_layer_5, %function
@@ -108,6 +112,158 @@ __asm_ntt_inverse_setup:
     ret lr
 
 
+/* length = 1, ridx = 0 */
+__asm_ntt_inverse_layer_9:
+    start_l .req x10
+    start_s .req x11
+
+    mov     start_l, x0
+    mov     start_s, x0
+
+    /* Store layer specific values  */
+
+    add     x1, x1, #4 * 0          // ridx, used for indexing B
+    add     x2, x2, #4 * 0          // ridx, used for indexing B'
+    mov     x3, #1 * 64             // 512 / 8 = 64
+
+    1:
+
+    /* Load the precomputed roots */
+
+    ldr q7, [x1], #16
+    ldr q8, [x2], #16
+
+    /* Load the coefficients */
+
+    ld1     {v1.s}[0], [start_l], #4
+    ld1     {v0.s}[0], [start_l], #4
+    ld1     {v1.s}[1], [start_l], #4
+    ld1     {v0.s}[1], [start_l], #4
+    ld1     {v1.s}[2], [start_l], #4
+    ld1     {v0.s}[2], [start_l], #4
+    ld1     {v1.s}[3], [start_l], #4
+    ld1     {v0.s}[3], [start_l], #4
+
+    // q0 contains coefficients [1, 3, 5, 7]
+    // q1 contains coefficients [0, 2, 4, 6]
+
+    /* Execute _asimd_sub_add */
+
+    add     v2.4s, v1.4s, v0.4s
+    sub     v0.4s, v1.4s, v0.4s
+
+    /* Execute _asimd_mul_red */
+
+    sqdmulh v1.4s, v0.4s, v7.4s     // Mulhi[a, B]
+    mul     v3.4s, v0.4s, v8.4s     // Mullo[a, B']
+    mov     v7.4s[0], M             // Load constant M
+    sqdmulh v3.4s, v3.4s, v7.4s[0]  // Mulhi[M, Mullo[a, B']]
+    sub     v1.4s, v1.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+
+    // q2 contains coefficients [0, 2, 4, 6]
+    // q1 contains coefficients [1, 3, 5, 7]
+
+    /* Store the result */
+
+    st1     {v2.s}[0], [start_s], #4
+    st1     {v1.s}[0], [start_s], #4
+    st1     {v2.s}[1], [start_s], #4
+    st1     {v1.s}[1], [start_s], #4
+    st1     {v2.s}[2], [start_s], #4
+    st1     {v1.s}[2], [start_s], #4
+    st1     {v2.s}[3], [start_s], #4
+    st1     {v1.s}[3], [start_s], #4
+
+    sub     x3, x3, #1              // Decrement loop counter by 1
+    cmp     x3, #0                  // Check wether we are done
+    b.ne    1b
+
+    ret     lr
+
+
+/* length = 2, ridx = 256 */
+__asm_ntt_inverse_layer_8:
+
+    start_l .req x10
+    start_s .req x11
+
+    mov     start_l, x0
+    mov     start_s, x0
+
+    /* Store layer specific values  */
+
+    add     x1, x1, #4 * 256        // ridx, used for indexing B
+    add     x2, x2, #4 * 256        // ridx, used for indexing B'
+    mov     x3, #1 * 64             // 512 / 8 = 64
+
+    1:
+
+    /* Load the precomputed roots */
+
+    ldr     MR_top, [x1], #4        // B[0]
+    mov     v7.4s[0], MR_top
+    mov     v7.4s[1], MR_top
+
+    ldr     MR_bot, [x2], #4        // B'[0]
+    mov     v8.4s[0], MR_bot
+    mov     v8.4s[1], MR_bot
+
+    ldr     MR_top, [x1], #4        // B[1]
+    mov     v7.4s[2], MR_top
+    mov     v7.4s[3], MR_top
+
+    ldr     MR_bot, [x2], #4        // B'[1]
+    mov     v8.4s[2], MR_bot
+    mov     v8.4s[3], MR_bot
+
+    /* Load the coefficients */
+
+    ld1     {v1.s}[0], [start_l], #4
+    ld1     {v1.s}[1], [start_l], #4
+    ld1     {v0.s}[0], [start_l], #4
+    ld1     {v0.s}[1], [start_l], #4
+    ld1     {v1.s}[2], [start_l], #4
+    ld1     {v1.s}[3], [start_l], #4
+    ld1     {v0.s}[2], [start_l], #4
+    ld1     {v0.s}[3], [start_l], #4
+
+    // q0 contains coefficients [2, 3, 6, 7]
+    // q1 contains coefficients [0, 1, 4, 5]
+
+    /* Execute _asimd_sub_add */
+
+    add     v2.4s, v1.4s, v0.4s
+    sub     v0.4s, v1.4s, v0.4s
+
+    /* Execute _asimd_mul_red */
+
+    sqdmulh v1.4s, v0.4s, v7.4s     // Mulhi[a, B]
+    mul     v3.4s, v0.4s, v8.4s     // Mullo[a, B']
+    mov     v7.4s[0], M             // Load constant M
+    sqdmulh v3.4s, v3.4s, v7.4s[0]  // Mulhi[M, Mullo[a, B']]
+    sub     v1.4s, v1.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+
+    // q2 contains coefficients [0, 1, 4, 5]
+    // q1 contains coefficients [2, 3, 6, 7]
+
+    /* Store the result */
+
+    st1     {v2.s}[0], [start_s], #4
+    st1     {v2.s}[1], [start_s], #4
+    st1     {v1.s}[0], [start_s], #4
+    st1     {v1.s}[1], [start_s], #4
+    st1     {v2.s}[2], [start_s], #4
+    st1     {v2.s}[3], [start_s], #4
+    st1     {v1.s}[2], [start_s], #4
+    st1     {v1.s}[3], [start_s], #4
+
+    sub     x3, x3, #1              // Decrement loop counter by 1
+    cmp     x3, #0                  // Check wether we are done
+    b.ne    1b
+
+    ret     lr
+
+
 /* length = 4, ridx = 384, loops = 64 */
 __asm_ntt_inverse_layer_7:
     __asm_ntt_inverse_layer 4, 384, 64
@@ -186,7 +342,7 @@ __asm_ntt_inverse_layer_1:
 
     2:
 
-    ldr     q0, [start]             // Load coefficients[idx] 
+    ldr     q0, [start]             // Load coefficients[idx]
     sqdmulh v1.4s, v0.4s, v3.4s[0]  // Execute multiply_reduce
     mul     v2.4s, v0.4s, v3.4s[0]
     sqdmulh v2.4s, v2.4s, v4.4s[0]

@@ -2,151 +2,10 @@
 
 /**
  * This source can be used to perform the forward and inverse iterative inplace
- * NTT transformations. It defines per-layer transformations as well as an easy
- * to use wrapper for both the forward and inverse NTT.
+ * NTT transformations. While the per-layer transformations have been defined in
+ * external assembly files, this source defines easy to use wrappers for both
+ * the forward and inverse NTT.
  */
-
-void forward_layer_8(int32_t *coefficients)
-{
-    unsigned int ridx = 127;
-
-    for (size_t idx = 0; idx < 512; idx = idx + 8)
-    {
-        /* Load the required (precomputed) roots */
-
-        int32_t zeta64 = roots[ridx++];
-        int32_t zeta128 = roots[ridx++];
-
-        /* Execute 4 multiply_reduce operations */
-
-        int32_t temp_32 = multiply_reduce(zeta64, coefficients[idx + 2]);
-        int32_t temp_64 = multiply_reduce(zeta64, coefficients[idx + 3]);
-        int32_t temp_96 = multiply_reduce(zeta128, coefficients[idx + 6]);
-        int32_t temp_128 = multiply_reduce(zeta128, coefficients[idx + 7]);
-
-        /* Execute 4 subtractions and 4 additions */
-
-        coefficients[idx + 2] = coefficients[idx + 0] - temp_32;
-        coefficients[idx + 3] = coefficients[idx + 1] - temp_64;
-        coefficients[idx + 6] = coefficients[idx + 4] - temp_96;
-        coefficients[idx + 7] = coefficients[idx + 5] - temp_128;
-
-        coefficients[idx + 0] = coefficients[idx + 0] + temp_32;
-        coefficients[idx + 1] = coefficients[idx + 1] + temp_64;
-        coefficients[idx + 4] = coefficients[idx + 4] + temp_96;
-        coefficients[idx + 5] = coefficients[idx + 5] + temp_128;
-    }
-}
-
-void forward_layer_9(int32_t *coefficients)
-{
-    unsigned int ridx = 255;
-
-    for (size_t idx = 0; idx < 512; idx = idx + 8)
-    {
-        /* Load the required (precomputed) roots */
-
-        int32_t zeta_32 = roots[ridx++];
-        int32_t zeta_64 = roots[ridx++];
-        int32_t zeta_96 = roots[ridx++];
-        int32_t zeta_128 = roots[ridx++];
-
-        /* Execute 4 multiply_reduce operations */
-
-        int32_t temp_32 = multiply_reduce(zeta_32, coefficients[idx + 1]);
-        int32_t temp_64 = multiply_reduce(zeta_64, coefficients[idx + 3]);
-        int32_t temp_96 = multiply_reduce(zeta_96, coefficients[idx + 5]);
-        int32_t temp_128 = multiply_reduce(zeta_128, coefficients[idx + 7]);
-
-        /* Execute 4 subtractions and 4 additions */
-
-        coefficients[idx + 1] = coefficients[idx + 0] - temp_32;
-        coefficients[idx + 3] = coefficients[idx + 2] - temp_64;
-        coefficients[idx + 5] = coefficients[idx + 4] - temp_96;
-        coefficients[idx + 7] = coefficients[idx + 6] - temp_128;
-
-        coefficients[idx + 0] = coefficients[idx + 0] + temp_32;
-        coefficients[idx + 2] = coefficients[idx + 2] + temp_64;
-        coefficients[idx + 4] = coefficients[idx + 4] + temp_96;
-        coefficients[idx + 6] = coefficients[idx + 6] + temp_128;
-    }
-}
-
-void inverse_layer_9(int32_t *coefficients)
-{
-    unsigned int ridx = 0;
-
-    for (size_t idx = 0; idx < 512; idx = idx + 8)
-    {
-        /* Load the required (precomputed) roots */
-
-        int32_t zeta_32 = roots_inv[ridx++];
-        int32_t zeta_64 = roots_inv[ridx++];
-        int32_t zeta_96 = roots_inv[ridx++];
-        int32_t zeta_128 = roots_inv[ridx++];
-
-        int32_t temp_32 = coefficients[idx + 0];
-        int32_t temp_64 = coefficients[idx + 2];
-        int32_t temp_96 = coefficients[idx + 4];
-        int32_t temp_128 = coefficients[idx + 6];
-
-        /* Execute 4 additions and 4 subtractions */
-
-        coefficients[idx + 0] = temp_32 + coefficients[idx + 1];
-        coefficients[idx + 2] = temp_64 + coefficients[idx + 3];
-        coefficients[idx + 4] = temp_96 + coefficients[idx + 5];
-        coefficients[idx + 6] = temp_128 + coefficients[idx + 7];
-
-        coefficients[idx + 1] = temp_32 - coefficients[idx + 1];
-        coefficients[idx + 3] = temp_64 - coefficients[idx + 3];
-        coefficients[idx + 5] = temp_96 - coefficients[idx + 5];
-        coefficients[idx + 7] = temp_128 - coefficients[idx + 7];
-
-        /* Execute 4 multiply_reduce operations */
-
-        coefficients[idx + 1] = multiply_reduce(zeta_32, coefficients[idx + 1]);
-        coefficients[idx + 3] = multiply_reduce(zeta_64, coefficients[idx + 3]);
-        coefficients[idx + 5] = multiply_reduce(zeta_96, coefficients[idx + 5]);
-        coefficients[idx + 7] = multiply_reduce(zeta_128, coefficients[idx + 7]);
-    }
-}
-
-void inverse_layer_8(int32_t *coefficients)
-{
-    unsigned int ridx = 256;
-
-    for (size_t idx = 0; idx < 512; idx = idx + 8)
-    {
-        /* Load the required (precomputed) roots */
-
-        int32_t zeta_32 = roots_inv[ridx++];
-        int32_t zeta_64 = roots_inv[ridx++];
-
-        int32_t temp_32 = coefficients[idx + 0];
-        int32_t temp_64 = coefficients[idx + 1];
-        int32_t temp_96 = coefficients[idx + 4];
-        int32_t temp_128 = coefficients[idx + 5];
-
-        /* Execute 4 additions and 4 subtractions */
-
-        coefficients[idx + 0] = temp_32 + coefficients[idx + 2];
-        coefficients[idx + 1] = temp_64 + coefficients[idx + 3];
-        coefficients[idx + 4] = temp_96 + coefficients[idx + 6];
-        coefficients[idx + 5] = temp_128 + coefficients[idx + 7];
-
-        coefficients[idx + 2] = temp_32 - coefficients[idx + 2];
-        coefficients[idx + 3] = temp_64 - coefficients[idx + 3];
-        coefficients[idx + 6] = temp_96 - coefficients[idx + 6];
-        coefficients[idx + 7] = temp_128 - coefficients[idx + 7];
-
-        /* Execute 4 multiply_reduce operations */
-
-        coefficients[idx + 2] = multiply_reduce(zeta_32, coefficients[idx + 2]);
-        coefficients[idx + 3] = multiply_reduce(zeta_32, coefficients[idx + 3]);
-        coefficients[idx + 6] = multiply_reduce(zeta_64, coefficients[idx + 6]);
-        coefficients[idx + 7] = multiply_reduce(zeta_64, coefficients[idx + 7]);
-    }
-}
 
 /**
  * @brief Compute the iterative inplace forward NTT of a polynomial.
@@ -170,9 +29,8 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
     __asm_ntt_forward_layer_5(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_6(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_7(coefficients, MR_top, MR_bot);
-
-    forward_layer_8(coefficients);
-    forward_layer_9(coefficients);
+    __asm_ntt_forward_layer_8(coefficients, MR_top, MR_bot);
+    __asm_ntt_forward_layer_9(coefficients, MR_top, MR_bot);
 
     reduce_coefficients(coefficients, mod);
 }
@@ -192,9 +50,8 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
 {
     __asm_ntt_setup();
 
-    inverse_layer_9(coefficients);
-    inverse_layer_8(coefficients);
-
+    __asm_ntt_inverse_layer_9(coefficients, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse_layer_8(coefficients, MR_inv_top, MR_inv_bot);
     __asm_ntt_inverse_layer_7(coefficients, MR_inv_top, MR_inv_bot);
     __asm_ntt_inverse_layer_6(coefficients, MR_inv_top, MR_inv_bot);
     __asm_ntt_inverse_layer_5(coefficients, MR_inv_top, MR_inv_bot);

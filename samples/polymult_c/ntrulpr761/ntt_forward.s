@@ -12,6 +12,8 @@
 .global __asm_ntt_forward_layer_5
 .global __asm_ntt_forward_layer_6
 .global __asm_ntt_forward_layer_7
+.global __asm_ntt_forward_layer_8
+.global __asm_ntt_forward_layer_9
 
 .type __asm_ntt_setup, %function
 .type __asm_ntt_forward_layer_1, %function
@@ -21,6 +23,8 @@
 .type __asm_ntt_forward_layer_5, %function
 .type __asm_ntt_forward_layer_6, %function
 .type __asm_ntt_forward_layer_7, %function
+.type __asm_ntt_forward_layer_8, %function
+.type __asm_ntt_forward_layer_9, %function
 
 /* Provide macro definitions */
 
@@ -252,108 +256,145 @@ __asm_ntt_forward_layer_7:
 
 
 /* length = 2, ridx = 127, loops = 128 */
-// .global __asm_ntt_forward_layer_8
-// .type __asm_ntt_forward_layer_8, %function
 __asm_ntt_forward_layer_8:
 
-    mov     start, x0               // Store *coefficients[0]
-    add     last, x0, #4 * 2        // Store *coefficients[length]
+    start_l .req x10
+    start_s .req x11
+
+    mov     start_l, x0
+    mov     start_s, x0
 
     /* Store layer specific values  */
 
     add     x1, x1, #4 * 127        // ridx, used for indexing B
     add     x2, x2, #4 * 127        // ridx, used for indexing B'
-    mov     x3, #1 * 128            // loops (NTT_P / length / 2)
+    mov     x3, #1 * 64             // 512 / 8 = 64
 
     1:
 
-    ldr     MR_top, [x1], #4        // Load precomputed B
-    ldr     MR_bot, [x2], #4        // Load precomputed B'
+    /* Load the precomputed roots */
 
-    /* -------------------- */
+    ldr     MR_top, [x1], #4        // B[0]
+    mov     v7.4s[0], MR_top
+    mov     v7.4s[1], MR_top
 
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+    ldr     MR_bot, [x2], #4        // B'[0]
+    mov     v8.4s[0], MR_bot
+    mov     v8.4s[1], MR_bot
 
-    ldr     d0, [start, #4 * 2]
-    mov     v1.2s[0], MR_top
-    sqdmulh v2.2s, v0.2s, v1.2s[0]
-    mov     v1.2s[0], MR_bot
-    mul     v3.2s, v0.2s, v1.2s[0]
-    mov     v1.2s[0], M
-    sqdmulh v3.2s, v3.2s, v1.2s[0]
-    sub     v0.2s, v2.2s, v3.2s
+    ldr     MR_top, [x1], #4        //  B[1]
+    mov     v7.4s[2], MR_top
+    mov     v7.4s[3], MR_top
 
-    ldr     d1, [start]
-    sub     v2.2s, v1.2s, v0.2s
-    add     v1.2s, v1.2s, v0.2s
-    str     d2, [start, #4 * 2]
-    str     d1, [start], #4 * 2
+    ldr     MR_bot, [x2], #4        //  B'[1]
+    mov     v8.4s[2], MR_bot
+    mov     v8.4s[3], MR_bot
 
-    /* -------------------- */
+    /* Load the coefficients */
 
-    // cmp     last, start             // Check if we have reached the next chunk
-    // b.ne    1b
+    ld1     {v1.s}[0], [start_l], #4
+    ld1     {v1.s}[1], [start_l], #4
+    ld1     {v0.s}[0], [start_l], #4
+    ld1     {v0.s}[1], [start_l], #4
+    ld1     {v1.s}[2], [start_l], #4
+    ld1     {v1.s}[3], [start_l], #4
+    ld1     {v0.s}[2], [start_l], #4
+    ld1     {v0.s}[3], [start_l], #4
 
-    add     start, last, #4 * 2     // Update pointer to next first coefficient
-    add     last, last, #8 * 2      // Update pointer to next last coefficient
+    // q0 contains coefficients [2, 3, 6, 7]
+    // q1 contains coefficients [0, 1, 4, 5]
 
-    // ldr     MR_top, [x1], #4        // Load precomputed B
-    // ldr     MR_bot, [x2], #4        // Load precomputed B'
+    /* Execute _asimd_mul_red */
+
+    sqdmulh v2.4s, v0.4s, v7.4s     // Mulhi[a, B]
+    mul     v3.4s, v0.4s, v8.4s     // Mullo[a, B']
+    mov     v7.4s[0], M             // Load constant M
+    sqdmulh v3.4s, v3.4s, v7.4s[0]  // Mulhi[M, Mullo[a, B']]
+    sub     v2.4s, v2.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+
+    /* Execute _asimd_sub_add */
+
+    sub     v0.4s, v1.4s, v2.4s
+    add     v1.4s, v1.4s, v2.4s
+
+    /* Store the result */
+
+    st1     {v1.s}[0], [start_s], #4
+    st1     {v1.s}[1], [start_s], #4
+    st1     {v0.s}[0], [start_s], #4
+    st1     {v0.s}[1], [start_s], #4
+    st1     {v1.s}[2], [start_s], #4
+    st1     {v1.s}[3], [start_s], #4
+    st1     {v0.s}[2], [start_s], #4
+    st1     {v0.s}[3], [start_s], #4
 
     sub     x3, x3, #1              // Decrement loop counter by 1
     cmp     x3, #0                  // Check wether we are done
-
     b.ne    1b
 
     ret     lr
 
 
 /* length = 1, ridx = 255, loops = 256 */
-// .global __asm_ntt_forward_layer_9
-// .type __asm_ntt_forward_layer_9, %function
 __asm_ntt_forward_layer_9:
 
-    mov     start, x0               // Store *coefficients[0]
-    add     last, x0, #4 * 1        // Store *coefficients[length]
+    start_l .req x10
+    start_s .req x11
+
+    mov     start_l, x0
+    mov     start_s, x0
 
     /* Store layer specific values  */
 
     add     x1, x1, #4 * 255        // ridx, used for indexing B
     add     x2, x2, #4 * 255        // ridx, used for indexing B'
-    mov     x3, #1 * 256            // loops (NTT_P / length / 2)
+    mov     x3, #1 * 64             // 512 / 8 = 64
 
     1:
 
-    ldr     MR_top, [x1], #4        // Load precomputed B
-    ldr     MR_bot, [x2], #4        // Load precomputed B'
+    ldr q7, [x1], #16               // Load precomputed B
+    ldr q8, [x2], #16               // Load precomputed B'
 
-    /* -------------------- */
+    /* Load the coefficients */
 
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
+    ld1     {v1.s}[0], [start_l], #4
+    ld1     {v0.s}[0], [start_l], #4
+    ld1     {v1.s}[1], [start_l], #4
+    ld1     {v0.s}[1], [start_l], #4
+    ld1     {v1.s}[2], [start_l], #4
+    ld1     {v0.s}[2], [start_l], #4
+    ld1     {v1.s}[3], [start_l], #4
+    ld1     {v0.s}[3], [start_l], #4
 
-    ldr     s0, [start, #4 * 1]
-    mov     v1.4s[0], MR_top
-    sqdmulh s2, s0, s1
-    mov     v1.4s[0], MR_bot
-    mul     v3.2s, v0.2s, v1.2s[0]
-    mov     v1.4s[0], M
-    sqdmulh s3, s3, s1
-    sub     d0, d2, d3
+    // q0 contains coefficients [1, 3, 5, 7]
+    // q1 contains coefficients [0, 2, 4, 6]
 
-    ldr     s1, [start]
-    sub     d2, d1, d0
-    add     d1, d1, d0
-    str     s2, [start, #4 * 1]
-    str     s1, [start], #4 * 1
+    /* Execute _asimd_mul_red */
 
-    /* -------------------- */
+    sqdmulh v2.4s, v0.4s, v7.4s     // Mulhi[a, B]
+    mul     v3.4s, v0.4s, v8.4s     // Mullo[a, B']
+    mov     v7.4s[0], M             // Load constant M
+    sqdmulh v3.4s, v3.4s, v7.4s[0]  // Mulhi[M, Mullo[a, B']]
+    sub     v2.4s, v2.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
 
-    add     start, last, #4 * 1     // Update pointer to next first coefficient
-    add     last, last, #8 * 1      // Update pointer to next last coefficient
+    /* Execute _asimd_sub_add */
+
+    sub     v0.4s, v1.4s, v2.4s
+    add     v1.4s, v1.4s, v2.4s
+
+    /* Store the result */
+
+    st1     {v1.s}[0], [start_s], #4
+    st1     {v0.s}[0], [start_s], #4
+    st1     {v1.s}[1], [start_s], #4
+    st1     {v0.s}[1], [start_s], #4
+    st1     {v1.s}[2], [start_s], #4
+    st1     {v0.s}[2], [start_s], #4
+    st1     {v1.s}[3], [start_s], #4
+    st1     {v0.s}[3], [start_s], #4
 
     sub     x3, x3, #1              // Decrement loop counter by 1
     cmp     x3, #0                  // Check wether we are done
-
     b.ne    1b
 
     ret     lr
