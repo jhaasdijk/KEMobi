@@ -45,8 +45,8 @@ int main()
 
     for (size_t idx = 0; idx < GP0; idx++)
     {
-        ntt_forward(A_mat[idx]);
-        ntt_forward(B_mat[idx]);
+        __asm_ntt_forward(A_mat[idx], MR_top, MR_bot);
+        __asm_ntt_forward(B_mat[idx], MR_top, MR_bot);
     }
 
     /**
@@ -109,7 +109,7 @@ int main()
 
     for (size_t idx = 0; idx < GP0; idx++)
     {
-        ntt_inverse(C_mat[idx]);
+        __asm_ntt_inverse(C_mat[idx], MR_inv_top, MR_inv_bot);
     }
 
     /**
