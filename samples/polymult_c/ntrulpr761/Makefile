@@ -1,4 +1,4 @@
-TARGET  = ${notdir ${CURDIR}}
+TARGET  = ${notdir ${CURDIR}}.out
 SRC_DIR = .
 C_FILES = ${wildcard ${SRC_DIR}/*.c}
 S_FILES = ${wildcard ${SRC_DIR}/*.s}
