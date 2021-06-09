@@ -45,8 +45,8 @@ int main()
 
     for (size_t idx = 0; idx < GP0; idx++)
     {
-        ntt_forward(A_mat[idx], NTT_Q);
-        ntt_forward(B_mat[idx], NTT_Q);
+        ntt_forward(A_mat[idx]);
+        ntt_forward(B_mat[idx]);
     }
 
     /**
@@ -109,7 +109,7 @@ int main()
 
     for (size_t idx = 0; idx < GP0; idx++)
     {
-        ntt_inverse(C_mat[idx], NTT_Q);
+        ntt_inverse(C_mat[idx]);
     }
 
     /**

@@ -18,7 +18,7 @@
  * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
  * @param[in] mod The modulo used to reduce each integer value
  */
-void ntt_forward(int32_t *coefficients, int32_t mod)
+void ntt_forward(int32_t *coefficients)
 {
     __asm_ntt_setup();
     __asm_ntt_forward_layer(coefficients, MR_top, MR_bot);
@@ -40,7 +40,7 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
  * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
  * @param[in] mod The modulo used to reduce each integer value
  */
-void ntt_inverse(int32_t *coefficients, int32_t mod)
+void ntt_inverse(int32_t *coefficients)
 {
     __asm_ntt_setup();
 

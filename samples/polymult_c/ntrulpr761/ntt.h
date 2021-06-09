@@ -55,7 +55,7 @@ extern void __asm_ntt_inverse_layer_8(int32_t *coefficients, int32_t *MR_inv_top
 extern void __asm_ntt_inverse_layer_765(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
 extern void __asm_ntt_inverse_layer_4321(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
 
-void ntt_forward(int32_t *coefficients, int32_t mod);
-void ntt_inverse(int32_t *coefficients, int32_t mod);
+void ntt_forward(int32_t *coefficients);
+void ntt_inverse(int32_t *coefficients);
 
 #endif
