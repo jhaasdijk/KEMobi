@@ -20,13 +20,7 @@
  */
 void ntt_forward(int32_t *coefficients)
 {
-    __asm_ntt_setup();
-    __asm_ntt_forward_layer(coefficients, MR_top, MR_bot);
-
-    __asm_ntt_forward_layer_8(coefficients, MR_top, MR_bot);
-    __asm_ntt_forward_layer_9(coefficients, MR_top, MR_bot);
-
-    __asm_reduce_coefficients(coefficients);
+    __asm_ntt_forward(coefficients, MR_top, MR_bot);
 }
 
 /**
