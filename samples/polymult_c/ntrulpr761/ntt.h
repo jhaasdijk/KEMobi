@@ -27,14 +27,10 @@ static int32_t MR_inv_bot[NTT_P - 1] = {2147483341, 580736220, 365725977, 691799
 
 /* Provide function declarations */
 
-extern void __asm_ntt_inverse_layer_9(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
-extern void __asm_ntt_inverse_layer_8(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
-extern void __asm_ntt_inverse_layer_765(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
-extern void __asm_ntt_inverse_layer_4321(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
-
 void ntt_forward(int32_t *coefficients);
 extern void __asm_ntt_forward(int32_t *coefficients, int32_t *MR_top, int32_t *MR_bot);
 
 void ntt_inverse(int32_t *coefficients);
+extern void __asm_ntt_inverse(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
 
 #endif

@@ -36,28 +36,5 @@ void ntt_forward(int32_t *coefficients)
  */
 void ntt_inverse(int32_t *coefficients)
 {
-    __asm_ntt_setup();
-
-    __asm_ntt_inverse_layer_9(coefficients, MR_inv_top, MR_inv_bot);
-    __asm_ntt_inverse_layer_8(coefficients, MR_inv_top, MR_inv_bot);
-
-    __asm_ntt_inverse_layer_765(coefficients, MR_inv_top, MR_inv_bot);
-
-    /**
-     * @brief Ensure that the coefficients stay within their allocated 32 bits
-     *
-     * Due to how the inverse NTT transformation is calculated, each layer
-     * increases the possible bitsize of the integer coefficients by 1.
-     * Performing 9 layers increases the possible bitsize of the integer
-     * coefficients by 9. To ensure that the integer coefficients stay within
-     * their allocated 32 bits we either 1) need to ensure that all values are
-     * at most 23 bits at the start of the function or 2) perform an
-     * intermediate reduction.
-     */
-
-    __asm_reduce_coefficients(coefficients);
-
-    __asm_ntt_inverse_layer_4321(coefficients, MR_inv_top, MR_inv_bot);
-
-    __asm_reduce_coefficients(coefficients);
+    __asm_ntt_inverse(coefficients, MR_inv_top, MR_inv_bot);
 }
