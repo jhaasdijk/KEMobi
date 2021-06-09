@@ -34,6 +34,7 @@ int32_t montgomery_reduce(int64_t x);
 int32_t multiply_reduce(int32_t x, int32_t y);
 
 void reduce_coefficients(int32_t *coefficients, int32_t mod);
+extern void __asm_reduce_coefficients(int32_t *coefficients);
 
 void reduce_terms_761(int32_t *coefficients);
 

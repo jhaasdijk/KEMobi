@@ -8,11 +8,13 @@
 .global __asm_ntt_forward_layer
 .global __asm_ntt_forward_layer_8
 .global __asm_ntt_forward_layer_9
+.global __asm_reduce_coefficients
 
 .type __asm_ntt_setup, %function
 .type __asm_ntt_forward_layer, %function
 .type __asm_ntt_forward_layer_8, %function
 .type __asm_ntt_forward_layer_9, %function
+.type __asm_reduce_coefficients, %function
 
 /* Provide macro definitions */
 
@@ -371,6 +373,41 @@ __asm_ntt_forward_layer_9:
 
     sub     x3, x3, #1              // Decrement loop counter by 1
     cmp     x3, #0                  // Check wether we are done
+    b.ne    1b
+
+    ret     lr
+
+
+__asm_reduce_coefficients:
+
+    /* Initialize and load constant values */
+
+    mov	    w3, #0x9201
+    movk    w3, #0x6a, lsl #16  // 6984193
+    mov	    w4, #0x7a4b
+    movk    w4, #0x133, lsl #16 // 20150859
+
+    dup     v3.4s, w3           // Copy 6984193 into all 4 elements
+    mov     v4.4s[0], w4
+    add	    x1, x0, #4 * 512
+
+    /* Loop over all coefficients */
+
+    1:
+    ldr	    q0, [x0]
+    smull   v1.2d, v0.2s, v4.2s[0]
+    sshr    v2.4s, v0.4s, #31
+    smull2  v5.2d, v0.4s, v4.4s[0]
+    uzp2    v1.4s, v1.4s, v5.4s
+    sshr    v1.4s, v1.4s, #15
+    sub	    v1.4s, v1.4s, v2.4s
+    mls	    v0.4s, v1.4s, v3.4s
+    cmge    v1.4s, v0.4s, #0
+    add	    v2.4s, v0.4s, v3.4s
+    bif	    v0.16b, v2.16b, v1.16b
+
+    str	    q0, [x0], #16       // Store the result and move to next chunk
+    cmp	    x1, x0              // Check whether we are done
     b.ne    1b
 
     ret     lr

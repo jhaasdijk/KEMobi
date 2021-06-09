@@ -26,7 +26,7 @@ void ntt_forward(int32_t *coefficients, int32_t mod)
     __asm_ntt_forward_layer_8(coefficients, MR_top, MR_bot);
     __asm_ntt_forward_layer_9(coefficients, MR_top, MR_bot);
 
-    reduce_coefficients(coefficients, mod);
+    __asm_reduce_coefficients(coefficients);
 }
 
 /**
@@ -61,9 +61,9 @@ void ntt_inverse(int32_t *coefficients, int32_t mod)
      * intermediate reduction.
      */
 
-    reduce_coefficients(coefficients, mod);
+    __asm_reduce_coefficients(coefficients);
 
     __asm_ntt_inverse_layer_4321(coefficients, MR_inv_top, MR_inv_bot);
 
-    reduce_coefficients(coefficients, mod);
+    __asm_reduce_coefficients(coefficients);
 }
