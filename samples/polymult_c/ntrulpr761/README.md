@@ -45,7 +45,7 @@ instructions:
 
 ```shell
 $ make
-$ for number in {1..500}; do ./ntrulpr761; done \
+$ for number in {1..500}; do ./ntrulpr761.out; done \
     | grep -v 'This is correct!' \
     | sort \
     | awk '{ count[NR + 1] = $1; } END { print count[NR / 2]; }'
@@ -56,6 +56,10 @@ The list below roughly keeps track of our progress.
 * `20/05 - 600767`<br>
 This value can be used as a baseline for future implementations. No real
 optimizations have been implemented apart from the Montgomery reduction and the
-NTT based approach for polynomial multiplication in general. Simple things like
+NTT based approach for polynomial multiplication in itself. Simple things like
 removing print statements and merging (or unrolling) for loops have not been
 done.
+
+* `09/06 - 457216`<br>
+This value has been achieved after completely implementing the forward and
+inverse NTT transformations (including reduce_coefficients) inside assembly.
