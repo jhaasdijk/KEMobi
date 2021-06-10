@@ -120,59 +120,6 @@ int32_t multiply_modulo(int32_t x, int32_t y, int32_t mod)
 }
 
 /**
- * @brief Montgomery reduction of the input.
- *
- * @details Given a 64 bit integer this function can be used to compute a 32 bit
- * integer congruent to x * (2^32)^-1 modulo NTT_Q.
- *
- * @param[in] x The input integer value that needs to be reduced
- *
- * @return Integer in {-Q + 1, ..., Q - 1} congruent to x * (2^32)^-1 modulo NTT_Q.
- */
-int32_t montgomery_reduce(int64_t x)
-{
-    int32_t out;
-    out = (int32_t)x * NTT_QINV;
-    out = (int32_t)((x - (int64_t)out * NTT_Q) >> 32);
-    return out;
-}
-
-/**
- * @brief Multiply the inputs and reduce the result using Montgomery reduction.
- *
- * @details This function can be used to multiply two inputs x and y and reduce
- * the result using Montgomery reduction. Note that this does require that one
- * of the multiplicands is in the Montgomery domain.
- *
- * @param[in] x The first input factor
- * @param[in] y The second input factor
- *
- * @return Integer congruent to x * y * (2^32)^-1 modulo NTT_Q
- */
-int32_t multiply_reduce(int32_t x, int32_t y)
-{
-    return montgomery_reduce((int64_t)x * y);
-}
-
-/**
- * @brief Reduce a polynomial's integer coefficients.
- *
- * @details This function can be used to reduce a polynomial's integer
- * coefficients. The modulus will always be positive and the largest value we
- * are going to use is 6984193. We can therefore simply use int32_t.
- *
- * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
- * @param[in] mod The modulo used to reduce each integer value
- */
-void reduce_coefficients(int32_t *coefficients, int32_t mod)
-{
-    for (size_t idx = 0; idx < NTT_P; idx++)
-    {
-        coefficients[idx] = modulo(coefficients[idx], mod);
-    }
-}
-
-/**
  * @brief Reduce a polynomial mod (x^761 - x - 1).
  *
  * @details This function can be used to reduce a polynomial. It takes an array
