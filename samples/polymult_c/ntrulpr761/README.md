@@ -39,27 +39,59 @@ polynomial multiplications is always small/short, i.e., has only coefficients in
 
 Running benchmarks currently employs a rather simplified approach, simply to
 establish the effect of intermediate changes on the overall cycle count. We
-compile the sources and run the execution 500 times, taking the median of the
+compile the sources and run the execution 1000 times, taking the median of the
 reported CPU cycle counts. This can be done by executing the following
 instructions:
 
 ```shell
 $ make
-$ for number in {1..500}; do ./ntrulpr761.out; done \
-    | grep -v 'This is correct!' \
+$ for number in {1..1000}; do ./ntt761.out; done \
+    | sort \
+    | awk '{ count[NR + 1] = $1; } END { print count[NR / 2]; }'
+
+$ make ntt
+$ for number in {1..1000}; do ./ntt512.out; done \
     | sort \
     | awk '{ count[NR + 1] = $1; } END { print count[NR / 2]; }'
 ```
 
 The list below roughly keeps track of our progress.
 
-* `20/05 - 600767`<br>
-This value can be used as a baseline for future implementations. No real
-optimizations have been implemented apart from the Montgomery reduction and the
-NTT based approach for polynomial multiplication in itself. Simple things like
-removing print statements and merging (or unrolling) for loops have not been
-done.
+* `20/05`
 
-* `09/06 - 457216`<br>
-This value has been achieved after completely implementing the forward and
-inverse NTT transformations (including reduce_coefficients) inside assembly.
+    | scheme     | implementation | Cycles       |
+    | ------     | -------------- | ------       |
+    | ntrulpr761 | 761 NTT        | med: 600.767 |
+
+    This value can be used as a baseline for future implementations. No real
+    optimizations have been implemented apart from the Montgomery reduction and
+    the NTT based approach for polynomial multiplication in itself. Simple
+    things like removing print statements and merging (or unrolling) for loops
+    have not been done.
+
+* `09/06`
+
+    | scheme     | implementation | Cycles       |
+    | ------     | -------------- | ------       |
+    | ntrulpr761 | 761 NTT        | med: 457.216 |
+
+    This value has been achieved after completely implementing the forward and
+    inverse NTT transformations (including `reduce_coefficients`) inside
+    assembly.
+
+* `10/06`
+
+    | scheme     | implementation | Cycles       |
+    | ------     | -------------- | ------       |
+    | ntrulpr761 | 512 NTT        | med:  83.093 |
+    |            | 761 NTT        | med: 300.418 |
+
+    Further reductions of the cost have been achieved by implementing a '`#define
+    SPEED`' switch to easily toggle between enabling or suppressing printing
+    debug information. The cycle counts are of course calculated _without_
+    printing debug information.
+
+    A separate entry has been added for keeping track of a single size 512 NTT
+    application. '512 NTT' keeps track of the cost of performing `Zx(F) * Zx(G)
+    % (x^512 - 1) % 6984193`. Please refer to `main512.c` for the
+    implementation.
