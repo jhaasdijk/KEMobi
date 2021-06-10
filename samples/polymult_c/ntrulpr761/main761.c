@@ -1,4 +1,4 @@
-#include "main.h"
+#include "main761.h"
 
 /**
  * This source can be used to perform NTT based polynomial multiplication. We
@@ -139,7 +139,7 @@ int main()
 
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
-        C_vec[idx] = modulo(C_vec[idx], NTT_Q);
+        C_vec[idx] = modulo(C_vec[idx], NTT_Q); // TODO ASIMD vectorize
     }
 
     /**
@@ -149,12 +149,12 @@ int main()
      * mod 4591 and stores them. This removes the zero padding.
      */
 
-    int32_t poly_out[NTRU_P];
-
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
-        poly_out[idx] = modulo(C_vec[idx], NTRU_Q);
+        poly_one[idx] = modulo(C_vec[idx], NTRU_Q); // TODO ASIMD vectorize
     }
+
+    #ifndef SPEED
 
     /**
      * @brief Test the result of the computation against the known test values
@@ -162,7 +162,7 @@ int main()
 
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
-        if (poly_out[idx] != result[idx])
+        if (poly_one[idx] != result[idx])
         {
             printf("%s\n", "This is not correct!");
             printf("%s%ld\n", "Error at index: ", idx);
@@ -171,6 +171,8 @@ int main()
     }
 
     printf("%s\n", "This is correct!");
+
+    #endif
 
     /**
      * @brief Read the current value of the processor cycle counter (after).
