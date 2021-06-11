@@ -2,7 +2,7 @@ TARGET761 = ntt761.out
 TARGET512 = ntt512.out
 
 C_FILES = goods.c util.c
-S_FILES = asm_ntt_forward.s asm_ntt_inverse.s asm_reduce_coefficients.s
+S_FILES = asm_ntt_forward.s asm_ntt_inverse.s
 
 OBJ = ${C_FILES:.c=.o}
 ASM = ${S_FILES:.s=.o}
