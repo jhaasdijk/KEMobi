@@ -18,12 +18,9 @@
 .endm
 
 .macro _asimd_mul_red q1, v0, v1, v2, v3, addr, offset
-    mov     \v0[0], MR_top          // Load precomputed B
     sqdmulh \v2, \v1, \v0[0]        // Mulhi[a, B]
-    mov     \v0[0], MR_bot          // Load precomputed B'
-    mul     \v3, \v1, \v0[0]        // Mullo[a, B']
-    mov     \v0[0], M               // Load constant M
-    sqdmulh \v3, \v3, \v0[0]        // Mulhi[M, Mullo[a, B']]
+    mul     \v3, \v1, \v0[1]        // Mullo[a, B']
+    sqdmulh \v3, \v3, \v0[2]        // Mulhi[M, Mullo[a, B']]
     sub     \v1, \v2, \v3           // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
     str     \q1, [\addr, \offset]   // Store coefficients[idx + length]
     add     \addr, \addr, #16       // Move to the next chunk
@@ -39,15 +36,15 @@
     add     x4, x2, #4 * \ridx      // ridx, used for indexing B'
     mov     x5, #1 * \loops         // loops (NTT_P / len / 2)
 
-    ldr     MR_top, [x3], #4        // Load precomputed B
-    ldr     MR_bot, [x4], #4        // Load precomputed B'
+    ld1     {v7.s}[0], [x3], #4     // Load precomputed B
+    ld1     {v7.s}[1], [x4], #4     // Load precomputed B'
 
     1:
 
     /* Perform the ASIMD arithmetic instructions for an inverse butterfly */
 
     _asimd_add_sub q0, q1, q2, v0.4s, v1.4s, v2.4s, start, #4 * \len
-    _asimd_mul_red q1, v0.4s v1.4s v2.4s v3.4s, start, #4 * \len
+    _asimd_mul_red q1, v7.4s v1.4s v2.4s v3.4s, start, #4 * \len
 
     cmp     last, start             // Check if we have reached the next chunk
     b.ne    1b
@@ -55,8 +52,8 @@
     add     start, last, #4 * \len  // Update pointer to next first coefficient
     add     last, last, #8 * \len   // Update pointer to next last coefficient
 
-    ldr     MR_top, [x3], #4        // Load precomputed B
-    ldr     MR_bot, [x4], #4        // Load precomputed B'
+    ld1     {v7.s}[0], [x3], #4     // Load precomputed B
+    ld1     {v7.s}[1], [x4], #4     // Load precomputed B'
 
     sub     x5, x5, #1              // Decrement loop counter by 1
     cmp     x5, #0                  // Check wether we are done
@@ -109,6 +106,8 @@ __asm_ntt_inverse:
     mov     M, #0x9201              // 6984193 (= M)
     movk    M, #0x6a, lsl #16
 
+    mov     v7.4s[2], M             // M TODO : Redundant statement
+
     mov	    M_inv, #0x7a4b
     movk    M_inv, #0x133, lsl #16  // 20150859 (= M_inv)
 
@@ -128,8 +127,8 @@ __asm_ntt_inverse:
 
     1:
 
-    ldr q7, [x6], #16               // Load precomputed B
-    ldr q8, [x7], #16               // Load precomputed B'
+    ldr q5, [x6], #16               // Load precomputed B
+    ldr q6, [x7], #16               // Load precomputed B'
 
     /* Load the coefficients */
 
@@ -152,10 +151,9 @@ __asm_ntt_inverse:
 
     /* Execute _asimd_mul_red */
 
-    sqdmulh v1.4s, v0.4s, v7.4s     // Mulhi[a, B]
-    mul     v3.4s, v0.4s, v8.4s     // Mullo[a, B']
-    mov     v7.4s[0], M             // Load constant M
-    sqdmulh v3.4s, v3.4s, v7.4s[0]  // Mulhi[M, Mullo[a, B']]
+    sqdmulh v1.4s, v0.4s, v5.4s     // Mulhi[a, B]
+    mul     v3.4s, v0.4s, v6.4s     // Mullo[a, B']
+    sqdmulh v3.4s, v3.4s, v7.4s[2]  // Mulhi[M, Mullo[a, B']]
     sub     v1.4s, v1.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
 
     // q2 contains coefficients [0, 2, 4, 6]
@@ -191,21 +189,15 @@ __asm_ntt_inverse:
 
     /* Load the precomputed roots */
 
-    ldr     MR_top, [x6], #4        // B[0]
-    mov     v7.4s[0], MR_top
-    mov     v7.4s[1], MR_top
+    ld1     {v5.s}[0], [x6]
+    ld1     {v5.s}[1], [x6], #4
+    ld1     {v5.s}[2], [x6]
+    ld1     {v5.s}[3], [x6], #4
 
-    ldr     MR_bot, [x7], #4        // B'[0]
-    mov     v8.4s[0], MR_bot
-    mov     v8.4s[1], MR_bot
-
-    ldr     MR_top, [x6], #4        // B[1]
-    mov     v7.4s[2], MR_top
-    mov     v7.4s[3], MR_top
-
-    ldr     MR_bot, [x7], #4        // B'[1]
-    mov     v8.4s[2], MR_bot
-    mov     v8.4s[3], MR_bot
+    ld1     {v6.s}[0], [x7]
+    ld1     {v6.s}[1], [x7], #4
+    ld1     {v6.s}[2], [x7]
+    ld1     {v6.s}[3], [x7], #4
 
     /* Load the coefficients */
 
@@ -228,10 +220,9 @@ __asm_ntt_inverse:
 
     /* Execute _asimd_mul_red */
 
-    sqdmulh v1.4s, v0.4s, v7.4s     // Mulhi[a, B]
-    mul     v3.4s, v0.4s, v8.4s     // Mullo[a, B']
-    mov     v7.4s[0], M             // Load constant M
-    sqdmulh v3.4s, v3.4s, v7.4s[0]  // Mulhi[M, Mullo[a, B']]
+    sqdmulh v1.4s, v0.4s, v5.4s     // Mulhi[a, B]
+    mul     v3.4s, v0.4s, v6.4s     // Mullo[a, B']
+    sqdmulh v3.4s, v3.4s, v7.4s[2]  // Mulhi[M, Mullo[a, B']]
     sub     v1.4s, v1.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
 
     // q2 contains coefficients [0, 1, 4, 5]
@@ -289,15 +280,17 @@ __asm_ntt_inverse:
     mov     start, x0               // Store *coefficients[0]
     add     last, x0, #4 * 256      // Store *coefficients[256]
 
-    ldr     MR_top, [x1, #4 * 510]  // Load precomputed B[510]
-    ldr     MR_bot, [x2, #4 * 510]  // Load precomputed B'[510]
+    add     x3, x1, #4 * 510
+    add     x4, x2, #4 * 510
+    ld1     {v7.s}[0], [x3], #4     // Load precomputed B
+    ld1     {v7.s}[1], [x4], #4     // Load precomputed B'
 
     1:
 
     /* Perform the ASIMD arithmetic instructions for a inverse butterfly */
 
     _asimd_add_sub q0, q1, q2, v0.4s, v1.4s, v2.4s, start, #4 * 256
-    _asimd_mul_red q1, v0.4s v1.4s v2.4s v3.4s, start, #4 * 256
+    _asimd_mul_red q1, v7.4s v1.4s v2.4s v3.4s, start, #4 * 256
 
     cmp     last, start             // Compare offset with *coefficients[256]
     b.ne    1b
@@ -313,16 +306,14 @@ __asm_ntt_inverse:
 
     mov     MR_top, #0x0000         // 4194304
     movk    MR_top, #0x40, lsl #16
-
     mov     v3.4s[0], MR_top
-    mov     v4.4s[0], M
 
     2:
 
     ldr     q0, [start]             // Load coefficients[idx]
     sqdmulh v1.4s, v0.4s, v3.4s[0]  // Execute multiply_reduce
     mul     v2.4s, v0.4s, v3.4s[0]
-    sqdmulh v2.4s, v2.4s, v4.4s[0]
+    sqdmulh v2.4s, v2.4s, v7.4s[2]
     sub     v0.4s, v1.4s, v2.4s
     str     q0, [start], #16        // Store coefficients[idx]
 
