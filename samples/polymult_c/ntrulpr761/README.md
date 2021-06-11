@@ -95,3 +95,16 @@ The list below roughly keeps track of our progress.
     application. '512 NTT' keeps track of the cost of performing `Zx(F) * Zx(G)
     % (x^512 - 1) % 6984193`. Please refer to `main512.c` for the
     implementation.
+
+* `11/06`
+
+    | scheme     | implementation | Cycles       |
+    | ------     | -------------- | ------       |
+    | ntrulpr761 | 512 NTT        | med:  69.034 |
+    |            | 761 NTT        | med: 267.428 |
+
+    Further reductions of the cost have been achieved by minimizing load, store
+    and move instructions. This is mostly achieved by eliminating mov
+    instructions in `_asimd_mul_red` and merging layers 1 and 2 in
+    `asm_ntt_forward.s`. For more information please refer to #cdc05d9 and
+    #5856c4a.
