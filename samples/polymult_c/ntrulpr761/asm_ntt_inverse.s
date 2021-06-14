@@ -304,8 +304,7 @@ __asm_ntt_inverse:
     // B  = 6970552 · R mod M = 4194304
     // B' = B · M' mod R      = 4194304
 
-    mov     MR_top, #0x0000         // 4194304
-    movk    MR_top, #0x40, lsl #16
+    movz    MR_top, #0x40, lsl #16  // Move wide with zero, 4194304 = 0x400000
     mov     v3.4s[0], MR_top
 
     2:
