@@ -139,7 +139,7 @@ int main()
 
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
-        C_vec[idx] = modulo(C_vec[idx], NTT_Q); // TODO ASIMD vectorize
+        C_vec[idx] = modulo(C_vec[idx], NTT_Q);
     }
 
     /**
@@ -151,11 +151,10 @@ int main()
 
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
-        poly_one[idx] = modulo(C_vec[idx], NTRU_Q); // TODO ASIMD vectorize
+        poly_one[idx] = modulo(C_vec[idx], NTRU_Q);
     }
 
-    #ifndef SPEED
-
+#ifndef SPEED
     /**
      * @brief Test the result of the computation against the known test values
      */
@@ -171,8 +170,7 @@ int main()
     }
 
     printf("%s\n", "This is correct!");
-
-    #endif
+#endif
 
     /**
      * @brief Read the current value of the processor cycle counter (after).
