@@ -106,5 +106,5 @@ The list below roughly keeps track of our progress.
     Further reductions of the cost have been achieved by minimizing load, store
     and move instructions. This is mostly achieved by eliminating mov
     instructions in `_asimd_mul_red` and merging layers 1 and 2 in
-    `asm_ntt_forward.s`. For more information please refer to #cdc05d9 and
-    #5856c4a.
+    `asm_ntt_forward.s`. For more information please refer to cdc05d9 and
+    5856c4a.
