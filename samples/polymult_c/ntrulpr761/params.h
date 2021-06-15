@@ -46,4 +46,10 @@
 
 #define NTT_QINV 1926852097
 
+/**
+ * @brief Define benchmarking related parameters
+ */
+
+#define NTESTS 500 /* Number of program executions in a single test */
+
 #endif

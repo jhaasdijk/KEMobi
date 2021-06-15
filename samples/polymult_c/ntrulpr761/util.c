@@ -29,6 +29,82 @@ inline uint64_t counter_read(void)
 }
 
 /**
+ * @brief Sort an array of 64 bit unsigned integers.
+ *
+ * @details This function can be used to sort an array of 64 bit unsigned
+ * integers. It's used to get easy access to the MIN, MAX, MED values in our
+ * benchmarking.
+ *
+ * @note This is not the fastest method of sorting, but that's okay.
+ *
+ * @param[in] arr An unsorted array of 64 bit unsigned integers.
+ */
+void sort(uint64_t *arr)
+{
+    uint64_t temp;
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        for (size_t j = 0; j < NTESTS - 1; j++)
+        {
+            if (arr[j] > arr[j + 1])
+            {
+                temp = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+        }
+    }
+}
+
+/**
+ * @brief Compute the median from a sorted array of 64 bit unsigned integers.
+ *
+ * @details To compute the median we simply have to take the 'middle' value.
+ * When the number of elements is odd there is only one such element. When the
+ * number of elements is even there are two middle elements, thus we take their
+ * sum and divide by two.
+ *
+ * @param[in] arr A sorted array of 64 bit unsigned integers.
+ *
+ * @return The computed median.
+ */
+double median(uint64_t *arr)
+{
+    if (NTESTS % 2 == 0)
+    {
+        return (double)(arr[NTESTS / 2] + arr[(NTESTS - 1) / 2]) / 2;
+    }
+    else
+    {
+        return (double)arr[NTESTS / 2];
+    }
+}
+
+/**
+ * @brief Compute and print benchmark related information.
+ *
+ * @details This function can be used to compute and print the MIN, MAX, MED
+ * cycle counts of the performed tests.
+ *
+ * @param[in] arr The 'raw' list of values read from the processor cycle
+ * counter.
+ */
+void benchmark(uint64_t *arr)
+{
+    for (size_t i = 0; i < NTESTS - 1; i++)
+    {
+        arr[i] = arr[i + 1] - arr[i];
+    }
+
+    sort(arr);
+
+    printf("MIN: %ld\n", arr[0]);
+    printf("MAX: %ld\n", arr[NTESTS - 2]);
+    printf("MED: %.1lf\n", median(arr));
+}
+
+/**
  * @brief Print an array of integer coefficients (i.e. a polynomial).
  *
  * @details This function can be used to print a polynomial that is being
@@ -58,7 +134,7 @@ void print_polynomial(int32_t *coefficients, int16_t size)
  * coefficients (i.e. a polynomial) of size 761 to size 1536. This makes it
  * suitable to use in the Good's permutation.
  *
- * @param[out] padded Zero padded array of integer coefficients of size 1536
+ * @param[out] padded Zero padded array of integer coefficients of size 1536.
  * @param[in] coefficients An array of integer coefficients (i.e. a polynomial).
  */
 void pad(int32_t *padded, int32_t *coefficients)
@@ -79,15 +155,16 @@ void pad(int32_t *padded, int32_t *coefficients)
 }
 
 /**
- * @brief Modulo operator that calculates the remainder after Euclidean division
+ * @brief Modulo operator that calculates the remainder after Euclidean
+ * division.
  *
  * @details This snippet has been adapted from the following Stack Overflow
- * answer: https://stackoverflow.com/a/52529440
+ * answer: https://stackoverflow.com/a/52529440.
  *
- * @param[in] value Integer value that needs to be reduced
- * @param[in] mod The modulus with which to reduce the integer value
+ * @param[in] value Integer value that needs to be reduced.
+ * @param[in] mod The modulus with which to reduce the integer value.
  *
- * @return The remainder after Euclidean division
+ * @return The remainder after Euclidean division.
  */
 int32_t modulo(int64_t value, int32_t mod)
 {
@@ -106,9 +183,9 @@ int32_t modulo(int64_t value, int32_t mod)
  * inputs x and y. The result is reduced using the remainder after Euclidean
  * division (modulo).
  *
- * @param[in] x The first input factor
- * @param[in] y The second input factor
- * @param[in] mod The modulo used to reduce the result
+ * @param[in] x The first input factor.
+ * @param[in] y The second input factor.
+ * @param[in] mod The modulo used to reduce the result.
  *
  * @return The result of (x * y) % mod
  */
@@ -127,7 +204,8 @@ int32_t multiply_modulo(int32_t x, int32_t y, int32_t mod)
  * i.e. x^761 = x + 1. This is done by adding coefficients[idx] into
  * coefficients[1] and coefficients[0] whenever coefficients[idx] is nonzero.
  *
- * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
+ * @param[in, out] coefficients An array of integer coefficients (i.e. a
+ * polynomial).
  */
 void reduce_terms_761(int32_t *coefficients)
 {

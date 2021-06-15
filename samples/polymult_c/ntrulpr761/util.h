@@ -21,6 +21,12 @@
 
 uint64_t counter_read(void);
 
+void sort(uint64_t *arr);
+
+double median(uint64_t *arr);
+
+void benchmark(uint64_t *arr);
+
 void print_polynomial(int32_t *coefficients, int16_t size);
 
 void pad(int32_t *padded, int32_t *coefficients);
