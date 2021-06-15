@@ -9,20 +9,16 @@
 
 /* Provide macro definitions */
 
-.macro _asimd_mul_red q0, v0, v1, v2, v3, addr, offset
-    ldr     \q0, [\addr, \offset]   // Load the upper coefficients
-    sqdmulh \v2, \v0, \v1[0]        // Mulhi[a, B]
-    mul     \v3, \v0, \v1[1]        // Mullo[a, B']
-    sqdmulh \v3, \v3, v28.4s[2]        // Mulhi[Mullo[a, B'], M]
-    sub     \v0, \v2, \v3           // Mulhi[a, B] − Mulhi[Mullo[a, B'], M]
-.endm
+.macro butterfly lower, upper, twiddle, t1, t2, t3
+    /* _asimd_mul_red */
+    sqdmulh \t1, \upper, \twiddle[0]
+    mul     \t2, \upper, \twiddle[1]
+    sqdmulh \t3, \t2, v28.4s[2]
+    sub     \t1, \t1, \t3
 
-.macro _asimd_sub_add q0, q1, v0, v1, v2, addr, offset
-    ldr     \q0, [\addr]            // Load the lower coefficients
-    sub     \v2, \v1, \v0           // coefficients[idx] - temp
-    add     \v1, \v1, \v0           // coefficients[idx] + temp
-    str     \q1, [\addr, \offset]   // Store the upper coefficients
-    str     \q0, [\addr], #16       // Store the lower coefficients and move to next chunk
+    /* _asimd_sub_add */
+    sub     \upper, \lower, \t1
+    add     \lower, \lower, \t1
 .endm
 
 .macro __asm_ntt_forward_layer len, ridx, loops
@@ -33,17 +29,22 @@
 
     add     x3, x1, #4 * \ridx      // ridx, used for indexing B
     add     x4, x2, #4 * \ridx      // ridx, used for indexing B'
-    mov     x5, #1 * \loops         // loops (NTT_P / len / 2)
+    mov     loop_ctr, #1 * \loops   // loops (NTT_P / len / 2)
 
-    ld1     {v7.s}[0], [x3], #4     // Load precomputed B
-    ld1     {v7.s}[1], [x4], #4     // Load precomputed B'
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'
 
     1:
 
     /* Perform the ASIMD arithmetic instructions for a forward butterfly */
 
-    _asimd_mul_red q0, v0.4s, v7.4s, v2.4s, v3.4s, start, #4 * \len
-    _asimd_sub_add q1, q2, v0.4s, v1.4s, v2.4s, start, #4 * \len
+    ldr     q1, [start, #4 * \len]  // Load the upper coefficients
+    ldr     q0, [start]             // Load the lower coefficients
+
+    butterfly v0.4s, v1.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    str     q1, [start, #4 * \len]  // Store the upper coefficients
+    str     q0, [start], #16        // Store the lower coefficients and move to next chunk
 
     cmp     last, start             // Check if we have reached the next chunk
     b.ne    1b
@@ -51,55 +52,11 @@
     add     start, last, #4 * \len  // Update pointer to next first coefficient
     add     last, last, #8 * \len   // Update pointer to next last coefficient
 
-    ld1     {v7.s}[0], [x3], #4     // Load next precomputed B
-    ld1     {v7.s}[1], [x4], #4     // Load next precomputed B'
+    ld1     {v28.s}[0], [x3], #4    // Load next precomputed B
+    ld1     {v28.s}[1], [x4], #4    // Load next precomputed B'
 
-    sub     x5, x5, #1              // Decrement loop counter by 1
-    cmp     x5, #0                  // Check whether we are done
-    b.ne    1b
-.endm
-
-.macro __asm_reduce_coefficients
-    dup     v3.4s, M                // Move M into all 4 elements
-    mov     v4.4s[0], M_inv         // Move M_inv into index [0]
-                                    // We don't need to fill all 4 elements
-
-    mov     start, x0               // Store *coefficients[0]
-    add	    last, x0, #4 * 512      // Store *coefficients[len]
-
-    /* Loop over all coefficients */
-
-    1:
-    ldr	    q0, [start]
-    smull   v1.2d, v0.2s, v4.2s[0]
-    sshr    v2.4s, v0.4s, #31
-    smull2  v5.2d, v0.4s, v4.4s[0]
-    uzp2    v1.4s, v1.4s, v5.4s
-    sshr    v1.4s, v1.4s, #15
-    sub	    v1.4s, v1.4s, v2.4s
-    mls	    v0.4s, v1.4s, v3.4s
-    cmge    v1.4s, v0.4s, #0
-    add	    v2.4s, v0.4s, v3.4s
-    bif	    v0.16b, v2.16b, v1.16b
-
-    str	    q0, [start], #4 * 4     // Store the result and move to next chunk
-    cmp	    last, start             // Check whether we are done
-    b.ne    1b
-.endm
-
-// TODO : Create macro for double butterfly
-.macro butterfly lower, upper, twiddle, t1, t2, t3
-
-    /* _asimd_mul_red */
-    sqdmulh \t1, \upper, \twiddle[0]
-    mul     \t2, \upper, \twiddle[1]
-    sqdmulh \t3, \t2, v28.4s[2]
-    sub     \t1, \t1, \t3
-
-    /* _asimd_sub_add */
-    sub     \upper, \lower, \t1
-    add     \lower, \lower, \t1
-
+    sub loop_ctr, loop_ctr, #1      // Decrement loop counter
+    cbnz loop_ctr, 1b               // Compare and Branch on Nonzero
 .endm
 
 __asm_ntt_forward:
@@ -111,16 +68,15 @@ __asm_ntt_forward:
 
     /* Alias registers for a specific purpose (and readability) */
 
-    loop_ctr .req x9
+    loop_ctr .req x10
 
-    start   .req x10    // Store pointer to the first integer coefficient
-    last    .req x11    // Store pointer to the last integer coefficient
+    start   .req x11    // Store pointer to the first integer coefficient
+    last    .req x12    // Store pointer to the last integer coefficient
 
-    MR_top  .req w12    // Store the precomputed B value for _asimd_mul_red
-    MR_bot  .req w13    // Store the precomputed B' value for _asimd_mul_red
+    MR_top  .req w13    // Store the precomputed B value for _asimd_mul_red
+    MR_bot  .req w14    // Store the precomputed B' value for _asimd_mul_red
 
-    M       .req w14    // Store the constant value M = 6984193
-    M_inv   .req w15    // Store the constant value M_inv = 20150859
+    M       .req w15    // Store the constant value M = 6984193
 
     /* Initialize constant values. Note that the move instruction is only able
      * to insert 16 bit immediate values into its destination. We therefore need
@@ -131,8 +87,6 @@ __asm_ntt_forward:
     movk    M, #0x6a, lsl #16
     mov     v28.4s[2], M             // Allocate M into a vector register
 
-    mov	    M_inv, #0x7a4b
-    movk    M_inv, #0x133, lsl #16  // 20150859 (= M_inv)
 
     /* Layers 1+2+3+4 */
     /* NTT forward layer 1: length = 256, ridx = 0, loops = 1 */
@@ -364,8 +318,8 @@ __asm_ntt_forward:
 
     /* NTT forward layer 8: length = 2, ridx = 127, loops = 128 */
 
-    start_l .req x10
-    start_s .req x11
+    start_l .req x11
+    start_s .req x12
 
     mov     start_l, x0
     mov     start_s, x0
@@ -485,10 +439,6 @@ __asm_ntt_forward:
 
     sub     loop_ctr, loop_ctr, #1  // Decrement loop counter by 1
     cbnz    loop_ctr, 1b            // Compare and Branch on Nonzero
-
-    /* Reduce the integer coefficients before returning control */
-
-    __asm_reduce_coefficients
 
     /* Restore any callee-saved registers (and possibly the procedure call link
      * register) before returning control to our caller. We avoided using such
