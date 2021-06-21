@@ -15,4 +15,4 @@ int init_module(void)
     return 0;
 }
 
-MODULE_LICENSE("MIT");
+MODULE_LICENSE("GPL");
