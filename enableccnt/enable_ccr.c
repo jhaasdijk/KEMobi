@@ -14,3 +14,5 @@ int init_module(void)
     printk(KERN_INFO "Userspace access to CCR enabled\n");
     return 0;
 }
+
+MODULE_LICENSE("MIT");
