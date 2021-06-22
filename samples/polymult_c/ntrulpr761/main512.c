@@ -8,54 +8,92 @@
  * poly_one * poly_two % (x^512 - 1) % 6984193
  */
 
-int main()
+/* Function for computing poly_one * poly_two % (x^512 - 1) % 6984193 */
+void ntt512(int32_t *fg, int32_t *f, int32_t *g)
 {
-    /* Verify that the result is still correct */
-    /* I.e. Test the result of the computation against the known test values */
-
-    static const int32_t result[NTT_P] = {1991680, -4550888, -1003817, 3253473, 9645316, -1619782, 14555203, 18797983, -844330, 8365002, -8685798, 3923958, -14463877, -10227259, -5036943, -15916881, -4604758, -14849228, -16441362, -5667776, -8059947, -15153475, -17977838, -19590608, -8199452, -13121560, -14685835, -1014217, -18785554, -29730302, -21624241, -11374871, -3688390, -7033868, 800460, 182214, 1616729, 7476145, 3280197, 17214833, 6560946, 1274170, -4157255, -14769437, -14297077, -6145633, -6823808, -5546354, 22989229, 11812105, 12561057, 17727653, 26099375, 19803879, 23412485, 10744601, -1115771, 11049897, 443005, 686121, 1230338, 960876, 15043640, 9529750, -7156499, 6663065, -603353, 11815675, 3471895, 8268631, 14361045, 24988413, 1771244, -6356020, -9225532, -19258228, 6302234, -616070, 9085682, -99334, -2647208, -7578178, -2616386, -9373304, 6827544, -2569964, -15952166, -7509498, 3681112, -9834132, -22945376, -9489524, -3405401, -557021, 10462279, -2790553, 1344352, -8388156, -8436836, -18603480, -14508203, -20084953, -577231, -11159045, -246186, 2001690, -10764118, 3078302, 5463054, -3718590, -4515578, -8487390, 6856818, -3910170, -569704, -7576856, 4823598, 5917578, 19363288, 15083800, 1439663, 2791277, 3295061, 6216343, -5371472, -3664616, -1561346, 3486770, -10815323, -18394307, -9787416, -5536102, -1330598, -8701056, 6936766, 3716372, -17134047, -5656579, -24939518, -14556924, -10691133, 1050135, -13628496, -7819102, -21928017, -15484623, -34931116, -21284564, -11636072, -6621124, -14087180, -16593224, -17532218, -17330634, -33357127, -29376597, -30146581, -24256773, -30931848, -29078398, -2657212, -10064932, 5789054, 3836162, -7471870, -11694482, -11053026, -6527246, 278795, 4855403, 9214563, 2778751, -9624986, -1869386, 760108, 14201568, -2722037, -7052723, -798574, 6068950, -13580617, -11912837, -12846271, -11810883, -10369829, -3979301, -16024961, -16101305, -4254389, -12327365, -28298022, -15111596, 3003692, 12790900, 6502438, 3858978, 12615089, 10083987, 22662142, 17200838, -5139968, -5113264, -8257965, 2199205, -10789382, 1953250, -1653296, 6509628, 193470, -4728606, 2383286, 439006, 6950847, 2624407, -13688534, -2319164, 2136669, 5979729, -7116269, -3416429, 577622, 1594194, -12659844, -1650800, -4415644, 3447172, -9031280, -1753200, 18351404, 13436580, 5678355, -907323, -13298970, -4627622, 9274124, -3007076, -1014362, -1839454, 10771078, 5965274, 12567378, 49678, 11020024, 13915960, -2238128, -5674848, -7473382, 5637518, 14246778, 3323730, 8357557, 15853639, -5381256, 2474564, 3461820, -9453192, 7784257, -2345289, 15627260, 3633796, -13783638, -10943598, -4061002, 6479782, -13952322, -9278390, 214862, -11011862, -9861930, -14459038, -22799848, -10609872, -13410596, -5730960, -399882, -11249850, -21401896, -21601072, -20552006, -20046602, -682681, -8494883, -12174468, -5483944, -11620786, 299118, -8007316, -9329776, -8772510, -5696254, -15369410, -10536494, 4870975, 6365003, -3121089, 3578203, -13927771, -14476251, -9954117, 2432567, -22076701, -17539777, -18749093, -18061185, 5956933, -5043867, 4053617, 1556697, 4848578, 5136446, -9269620, -603880, 9651060, -3988236, 12615625, -1179793, 14827244, 14281108, 1168258, 14815318, -2050382, -1562780, 15829963, 3204359, -7706774, -13643312, -7439142, -4714804, 2999644, -7097832, 2600710, -9897506, -11326064, -9351262, -1250191, -14901907, -537537, 4426945, 14332878, 3563306, -6246977, -16877979, -7801749, 2547137, -4889411, -1233167, -21064466, -10527288, -1478564, -1547706, -2021743, -2885295, 16597690, 27956702, 15061792, 15790316, 14961551, 4741563, -4367713, 7918715, -2569372, 6668964, 9119659, 6039053, 1350680, 11406956, 11686522, 2423690, -10267841, 334729, 8682707, 3879509, -7315799, -2858913, -14091088, -18557320, -6146026, -3803154, 5470138, -7444566, 962702, 5188038, 6808556, 15039816, 10345152, 21276484, 14731873, 841099, 4034764, 17758584, 20793508, 15893224, -2152071, -14086299, 190003, 5089443, 8094177, 5457961, 563991, 4739627, 7796617, -4414787, 17648663, 4996543, 5045215, 7413243, 10273080, 15909554, -1919447, -451127, 3340221, -206099, 175305, 525237, 8846377, 11758685, -10254539, -5048775, 2306669, -2366595, -3770343, 6013471, 1040404, 14656140, 4095114, -1600678, -5793987, -170825, 2038090, 5924606, 10973258, 14446246, -192123, 1554959, 13954546, 15365610, 15376757, 11973951, 25781229, 18964991, 7255806, 6679242, 1347728, 12042640, 3626764, 134036, -17606378, -4350254, 20266415, 32315863, 28784779, 18018611, 7266439, 9045143, 17927577, 19963413, 26827423, 22705131, 24008079, 19262723, 8577027, 14762319, 12262353, 12397041, 6149032, 11540372, 10449750, 21106142, -9369333, 4010319, 3388126, 316360, 9927296, 17961056, 4016898, 6301142, 11253564, 3050930, 13124641, 13010057, 27043573, 27634521, 28827395, 21692587, 23038689, 12863993, 21386727, 26549067, 19104125, 25902949, 33802399, 31508323, 17246135, 10212303, 19598161, 27923229, 17917683, 19716075, 18288502, 14262144, 10017315, 12658503, 5517259, -5508001, 15871474, 24027176, 22350176, 8821802, 3237405, 11945313, 347966, 3950168};
-    __asm_ntt_forward(poly_one, MR_top, MR_bot);
-    for (size_t idx = 0; idx < NTT_P; idx++)
-    {
-        if (poly_one[idx] != result[idx])
-        {
-            printf("%s\n", "This is not correct!");
-            printf("%s%ld\n", "Error at index: ", idx);
-            return -1;
-        }
-    }
-    printf("%s\n", "This is correct!");
-
-    /* Benchmark the performance */
-    /* Loop the operations NTESTS time - We need to warm up the cache */
-
-    uint64_t t0[NTESTS];
-    for (size_t i = 0; i < NTESTS; i++)
-    {
-        /* Read the current value of the processor cycle counter */
-        t0[i] = counter_read();
-
-        /* Compute the NTT forward transformation */
-        __asm_ntt_forward(poly_one, MR_top, MR_bot);
-    }
-    benchmark(t0);
-
-    return 0;
-
-#if 0
-    __asm_ntt_forward(poly_two, MR_top, MR_bot);
+    /* Compute the iterative inplace forward NTT */
+    __asm_ntt_forward(f, MR_top, MR_bot);
+    __asm_ntt_forward(g, MR_top, MR_bot);
 
     /* Compute the point-wise multiplication of the integer coefficients */
     for (size_t idx = 0; idx < NTT_P; idx++)
     {
-        poly_one[idx] = multiply_modulo(poly_one[idx], poly_two[idx], NTT_Q);
+        fg[idx] = multiply_modulo(f[idx], g[idx], NTT_Q);
     }
 
     /* Compute the iterative inplace inverse NTT */
-    __asm_ntt_inverse(poly_one, MR_inv_top, MR_inv_bot);
+    __asm_ntt_inverse(fg, MR_inv_top, MR_inv_bot);
+}
 
-#ifndef SPEED
-    /* Test the result of the computation against the known test values */
+/* Function for benchmarking the forward NTT */
+void test_ntt_forward(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        __asm_ntt_forward(poly_one, MR_top, MR_bot);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the point-wise multiplication */
+void test_ntt_mult(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        for (size_t idx = 0; idx < NTT_P; idx++)
+        {
+            poly_one[idx] = multiply_modulo(poly_one[idx], poly_two[idx], NTT_Q);
+        }
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the inverse NTT */
+void test_ntt_inverse(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        __asm_ntt_inverse(poly_one, MR_top, MR_bot);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the complete calculation */
+void test_complete(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        ntt512(poly_one, poly_one, poly_two);
+    }
+
+    benchmark(t0, preface);
+}
+
+int main()
+{
+    /**
+     * @brief Verify that the result is still correct.
+     *
+     * We test the result of the computation against the known test values.
+     */
+
+    ntt512(poly_one, poly_one, poly_two);
+
     for (size_t idx = 0; idx < NTT_P; idx++)
     {
         if (poly_one[idx] != result[idx])
@@ -65,13 +103,24 @@ int main()
             return -1;
         }
     }
-    printf("%s\n", "This is correct!");
-#endif
 
-    /* Read and compare the current value of the processor cycle counter */
-    uint64_t t1 = counter_read();
-    printf("%ld\n", t1 - t0);
+    printf("%s\n", "This is correct!");
+
+    /**
+     * @brief Benchmark the performance of the individual fragments.
+     *
+     * We do this by looping the operations NTESTS time. This is better than a
+     * 'one shot' test since we need to warm up the cache and ensure that it
+     * contains valid data. During performance testing it is important to take
+     * the frequency of cache hits / cache misses into account.
+     */
+
+    printf("%s\n", "Zx(F) * Zx(G) % (x^512 - 1) % 6984193");
+
+    test_ntt_forward("NTT forward");
+    test_ntt_mult("Product");
+    test_ntt_inverse("NTT inverse");
+    test_complete("Complete");
 
     return 0;
-#endif
 }

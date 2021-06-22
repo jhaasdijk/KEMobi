@@ -8,22 +8,17 @@
  * poly_one * poly_two % (x^761 - x - 1) % 4591
  */
 
-int main()
+/* Function for computing poly_one * poly_two % (x^761 - x - 1) % 4591 */
+void ntt761(int32_t *fg, int32_t *f, int32_t *g)
 {
-    /**
-     * @brief Read the current value of the processor cycle counter (before).
-     */
-
-    uint64_t t0 = counter_read();
-
     /**
      * @brief Zero pad the input polynomials to size 1536.
      */
 
     int32_t A_vec[GPR], B_vec[GPR];
 
-    pad(A_vec, poly_one);
-    pad(B_vec, poly_two);
+    pad(A_vec, f);
+    pad(B_vec, g);
 
     /**
      * @brief Compute the forward Good's permutation.
@@ -151,13 +146,208 @@ int main()
 
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
-        poly_one[idx] = modulo(C_vec[idx], NTRU_Q);
+        fg[idx] = modulo(C_vec[idx], NTRU_Q);
+    }
+}
+
+/* Function for benchmarking the zero padding */
+void test_zpad(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    int32_t v[GPR];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        pad(v, poly_one);
     }
 
-#ifndef SPEED
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the forward Good's permutation */
+void test_goods_forward(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    int32_t v[GPR], m[GP0][GP1];
+    pad(v, poly_one);
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        goods_forward(m, v);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the forward NTT transformation */
+void test_ntt_forward(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        __asm_ntt_forward(poly_one, MR_top, MR_bot);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the point-wise multiplication */
+void test_ntt_mult(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    int32_t v[GPR], w[GPR];
+    int32_t m[GP0][GP1], n[GP0][GP1];
+
+    pad(v, poly_one);
+    pad(w, poly_two);
+
+    goods_forward(m, v);
+    goods_forward(n, w);
+
+    for (size_t idx = 0; idx < GP0; idx++)
+    {
+        __asm_ntt_forward(m[idx], MR_top, MR_bot);
+        __asm_ntt_forward(n[idx], MR_top, MR_bot);
+    }
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+
+        for (size_t j = 0; j < GP1; j++)
+        {
+            int32_t accum[2 * GP0 - 1] = {0, 0, 0, 0, 0};
+            int32_t F[GP0] = {m[0][j], m[1][j], m[2][j]};
+            int32_t G[GP0] = {n[0][j], n[1][j], n[2][j]};
+
+            for (size_t k = 0; k < GP0; k++)
+                for (size_t l = 0; l < GP0; l++)
+                    accum[k + l] += multiply_modulo(F[k], G[l], NTT_Q);
+
+            for (size_t p = 2 * GP0 - 2; p >= GP0; p--)
+            {
+                if (accum[p] > 0)
+                {
+                    accum[p - GP0] += accum[p];
+                    accum[p] = 0;
+                }
+            }
+        }
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the inverse NTT transformation */
+void test_ntt_inverse(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        __asm_ntt_inverse(poly_one, MR_top, MR_bot);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the inverse Good's permutation */
+void test_goods_inverse(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    int32_t v[GPR], m[GP0][GP1];
+    pad(v, poly_one);
+    goods_forward(m, v);
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        goods_inverse(v, m);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking Zx % (x^761 - x - 1)*/
+void test_red(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        reduce_terms_761(poly_one);
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking Zx % 6984193 */
+void test_ntt_mod(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        for (size_t idx = 0; idx < NTRU_P; idx++)
+        {
+            poly_one[idx] = modulo(poly_one[idx], NTT_Q);
+        }
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking Zx % 4591 */
+void test_mod(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        for (size_t idx = 0; idx < NTRU_P; idx++)
+        {
+            poly_one[idx] = modulo(poly_one[idx], NTRU_Q);
+        }
+    }
+
+    benchmark(t0, preface);
+}
+
+/* Function for benchmarking the complete calculation */
+void test_complete(char *preface)
+{
+    uint64_t t0[NTESTS];
+
+    for (size_t i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        ntt761(poly_one, poly_one, poly_two);
+    }
+
+    benchmark(t0, preface);
+}
+
+int main()
+{
     /**
-     * @brief Test the result of the computation against the known test values
+     * @brief Verify that the result is still correct.
+     *
+     * We test the result of the computation against the known test values.
      */
+
+    ntt761(poly_one, poly_one, poly_two);
 
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
@@ -170,17 +360,28 @@ int main()
     }
 
     printf("%s\n", "This is correct!");
-#endif
 
     /**
-     * @brief Read the current value of the processor cycle counter (after).
+     * @brief Benchmark the performance of the individual fragments.
      *
-     * This value is compared to the (before) value to compute the performance
-     * of the current implemenatation considering CPU cycle count.
+     * We do this by looping the operations NTESTS time. This is better than a
+     * 'one shot' test since we need to warm up the cache and ensure that it
+     * contains valid data. During performance testing it is important to take
+     * the frequency of cache hits / cache misses into account.
      */
 
-    uint64_t t1 = counter_read();
-    printf("%ld\n", t1 - t0);
+    printf("%s\n", "Zx(F) * Zx(G) % (x^761 - x - 1) % 4591");
+
+    test_zpad("Zero padding");
+    test_goods_forward("Good's forward");
+    test_ntt_forward("NTT forward");
+    test_ntt_mult("Product");
+    test_ntt_inverse("NTT inverse");
+    test_goods_inverse("Good's inverse");
+    test_red("Zx % (x^761 - x - 1)");
+    test_ntt_mod("Zx % 6984193");
+    test_mod("Zx % 4591");
+    test_complete("Complete");
 
     return 0;
 }

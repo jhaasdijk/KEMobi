@@ -108,3 +108,31 @@ The list below roughly keeps track of our progress.
     instructions in `_asimd_mul_red` and merging layers 1 and 2 in
     `asm_ntt_forward.s`. For more information please refer to cdc05d9 and
     5856c4a.
+
+* `22/06`
+
+```terminal
+Zx(F) * Zx(G) % (x^512 - 1) % 6984193
+| NTT forward          | med: 9466      |
+| Product              | med: 6863      |
+| NTT inverse          | med: 13813     |
+| Complete             | med: 44287     |
+
+Zx(F) * Zx(G) % (x^761 - x - 1) % 4591
+| Zero padding         | med: 856       |
+| Good's forward       | med: 5660      |
+| NTT forward          | med: 9467      |
+| Product              | med: 102947    |
+| NTT inverse          | med: 13813     |
+| Good's inverse       | med: 5661      |
+| Zx % (x^761 - x - 1) | med: 3125      |
+| Zx % 6984193         | med: 4588      |
+| Zx % 4591            | med: 4588      |
+| Complete             | med: 258518    |
+```
+
+More extensive and accurate benchmarking of the cost has been achieved by
+warming up the cache and ensuring that it contains valid data. During
+performance testing it is important to take the frequency of cache hits / cache
+misses into account.
+

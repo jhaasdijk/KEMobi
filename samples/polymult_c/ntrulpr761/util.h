@@ -9,6 +9,7 @@
 
 /* Include system header files */
 
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,15 +18,20 @@
 
 #include "params.h"
 
+/* ANSI escape codes */
+
+#define CYAN "\033[36m"
+#define RESET "\033[0m"
+
 /* Provide function declarations */
 
 uint64_t counter_read(void);
 
 void sort(uint64_t *arr);
 
-double median(uint64_t *arr);
+uint64_t median(uint64_t *arr);
 
-void benchmark(uint64_t *arr);
+void benchmark(uint64_t *arr, char *preface);
 
 void print_polynomial(int32_t *coefficients, int16_t size);
 

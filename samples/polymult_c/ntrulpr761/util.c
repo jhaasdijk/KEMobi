@@ -69,15 +69,16 @@ void sort(uint64_t *arr)
  *
  * @return The computed median.
  */
-double median(uint64_t *arr)
+uint64_t median(uint64_t *arr)
 {
     if (NTESTS % 2 == 0)
     {
-        return (double)(arr[NTESTS / 2] + arr[(NTESTS - 1) / 2]) / 2;
+        double median = (double)(arr[NTESTS / 2] + arr[(NTESTS - 1) / 2]) / 2;
+        return (uint64_t)ceil(median); // No such thing as half a cycle ..
     }
     else
     {
-        return (double)arr[NTESTS / 2];
+        return arr[NTESTS / 2];
     }
 }
 
@@ -90,7 +91,7 @@ double median(uint64_t *arr)
  * @param[in] arr The 'raw' list of values read from the processor cycle
  * counter.
  */
-void benchmark(uint64_t *arr)
+void benchmark(uint64_t *arr, char *preface)
 {
     for (size_t i = 0; i < NTESTS - 1; i++)
     {
@@ -99,9 +100,10 @@ void benchmark(uint64_t *arr)
 
     sort(arr);
 
-    printf("MIN: %ld\n", arr[0]);
-    printf("MAX: %ld\n", arr[NTESTS - 2]);
-    printf("MED: %.1lf\n", median(arr));
+    printf("| " CYAN "%-21s" RESET "| ", preface);
+    // printf("min: %ld \t| ", arr[0]);
+    // printf("max: %ld \t| ", arr[NTESTS - 2]);
+    printf("med: %ld \t|\n", median(arr));
 }
 
 /**
