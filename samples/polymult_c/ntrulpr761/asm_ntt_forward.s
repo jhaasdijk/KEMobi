@@ -85,8 +85,7 @@ __asm_ntt_forward:
 
     mov     M, #0x9201              // 6984193 (= M)
     movk    M, #0x6a, lsl #16
-    mov     v28.4s[2], M             // Allocate M into a vector register
-
+    mov     v28.4s[2], M            // Allocate M into a vector register
 
     /* Layers 1+2+3+4 */
     /* NTT forward layer 1: length = 256, ridx = 0, loops = 1 */
@@ -95,18 +94,6 @@ __asm_ntt_forward:
     /* NTT forward layer 4: length = 32,  ridx = 7, loops = 8 */
 
     mov     start, x0               // Store *coefficients[0]
-    mov     x3, x1
-    mov     x4, x2
-
-    ld1     {v26.s}[0], [x3], #4    // Load precomputed B[0]
-    ld1     {v26.s}[1], [x4], #4    // Load precomputed B'[0]
-
-    ld1     {v27.s}[0], [x3], #4    // Load precomputed B[1]
-    ld1     {v27.s}[1], [x4], #4    // Load precomputed B'[1]
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[2]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[2]
-
     mov     loop_ctr, #8            // 32 / 4
 
     1:
@@ -131,28 +118,93 @@ __asm_ntt_forward:
     ldr     q22, [start, #4 * 448]
     ldr     q23, [start, #4 * 480]
 
+    mov     x3, x1 // the original B B' pointers
+    mov     x4, x2
+
     // LAYER 1
 
-    butterfly v0.4s, v16.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v17.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v2.4s, v18.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v3.4s, v19.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v4.4s, v20.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v5.4s, v21.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v6.4s, v22.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v7.4s, v23.4s, v26.4s, v29.4s, v30.4s, v31.4s
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[0]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[0]
+    butterfly v0.4s, v16.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v1.4s, v17.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v2.4s, v18.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v3.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v4.4s, v20.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v5.4s, v21.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v6.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v7.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
 
     // LAYER 2
 
-    butterfly v0.4s, v4.4s, v27.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v5.4s, v27.4s, v29.4s, v30.4s, v31.4s
-    butterfly v2.4s, v6.4s, v27.4s, v29.4s, v30.4s, v31.4s
-    butterfly v3.4s, v7.4s, v27.4s, v29.4s, v30.4s, v31.4s
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[1]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[1]
+    butterfly v0.4s, v4.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v1.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v2.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v3.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
 
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[2]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[2]
     butterfly v16.4s, v20.4s, v28.4s, v29.4s, v30.4s, v31.4s
     butterfly v17.4s, v21.4s, v28.4s, v29.4s, v30.4s, v31.4s
     butterfly v18.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
     butterfly v19.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    // LAYER 3
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[3]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[3]
+    butterfly v0.4s, v2.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v1.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[4]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[4]
+    butterfly v4.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v5.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[5]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[5]
+    butterfly v16.4s, v18.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v17.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[6]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[6]
+    butterfly v20.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v21.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    // LAYER 4
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[7]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[7]
+    butterfly v0.4s, v1.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[8]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[8]
+    butterfly v2.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[9]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[9]
+    butterfly v4.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[10]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[10]
+    butterfly v6.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[11]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[11]
+    butterfly v16.4s, v17.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[12]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[12]
+    butterfly v18.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[13]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[13]
+    butterfly v20.4s, v21.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[14]
+    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[14]
+    butterfly v22.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
 
     str     q0, [start, #4 * 0]
     str     q1, [start, #4 * 32]
@@ -178,134 +230,6 @@ __asm_ntt_forward:
 
     sub loop_ctr, loop_ctr, #1      // Decrement loop counter
     cbnz loop_ctr, 1b               // Compare and Branch on Nonzero
-
-
-
-
-    // LAYER 3+4
-
-    mov     start, x0               // Store *coefficients[0]
-
-    add     x3, x1, #4 * 3          // ridx, used for indexing B
-    add     x4, x2, #4 * 3          // ridx, used for indexing B'
-    add     x5, x1, #4 * 7          // ridx, used for indexing B
-    add     x6, x2, #4 * 7          // ridx, used for indexing B'
-
-    ld1     {v26.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v26.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v27.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v27.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v28.s}[0], [x3], #4     // Load (next) precomputed B
-    ld1     {v28.s}[1], [x4], #4     // Load (next) precomputed B'
-
-    .rept 8
-
-    ldr     q0, [start, #4 * 0]
-    ldr     q1, [start, #4 * 32]
-    ldr     q2, [start, #4 * 64]
-    ldr     q3, [start, #4 * 96]
-
-    butterfly v0.4s, v2.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v0.4s, v1.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v2.4s, v3.4s, v27.4s, v29.4s, v30.4s, v31.4s
-
-    str     q0, [start, #4 * 0]
-    str     q1, [start, #4 * 32]
-    str     q2, [start, #4 * 64]
-    str     q3, [start, #4 * 96]
-
-    add start, start, #16           // Move to the next chunk
-
-    .endr
-
-    ld1     {v26.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v26.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v27.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v27.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v28.s}[0], [x3], #4     // Load (next) precomputed B
-    ld1     {v28.s}[1], [x4], #4     // Load (next) precomputed B'
-
-    .rept 8
-
-    ldr     q4, [start, #4 * 96]
-    ldr     q5, [start, #4 * 128]
-    ldr     q6, [start, #4 * 160]
-    ldr     q7, [start, #4 * 192]
-
-    butterfly v4.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v5.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v4.4s, v5.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v6.4s, v7.4s, v27.4s, v29.4s, v30.4s, v31.4s
-
-    str     q4, [start, #4 * 96]
-    str     q5, [start, #4 * 128]
-    str     q6, [start, #4 * 160]
-    str     q7, [start, #4 * 192]
-
-    add start, start, #16           // Move to the next chunk
-
-    .endr
-
-    ld1     {v26.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v26.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v27.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v27.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v28.s}[0], [x3], #4     // Load (next) precomputed B
-    ld1     {v28.s}[1], [x4], #4     // Load (next) precomputed B'
-
-    .rept 8
-
-    ldr     q16, [start, #4 * 192]
-    ldr     q17, [start, #4 * 224]
-    ldr     q18, [start, #4 * 256]
-    ldr     q19, [start, #4 * 288]
-
-    butterfly v16.4s, v18.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v17.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v16.4s, v17.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v18.4s, v19.4s, v27.4s, v29.4s, v30.4s, v31.4s
-
-    str     q16, [start, #4 * 192]
-    str     q17, [start, #4 * 224]
-    str     q18, [start, #4 * 256]
-    str     q19, [start, #4 * 288]
-
-    add start, start, #16           // Move to the next chunk
-
-    .endr
-
-    ld1     {v26.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v26.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v27.s}[0], [x5], #4     // Load (next) precomputed B
-    ld1     {v27.s}[1], [x6], #4     // Load (next) precomputed B'
-    ld1     {v28.s}[0], [x3], #4     // Load (next) precomputed B
-    ld1     {v28.s}[1], [x4], #4     // Load (next) precomputed B'
-
-    .rept 8
-
-    ldr     q20, [start, #4 * 288]
-    ldr     q21, [start, #4 * 320]
-    ldr     q22, [start, #4 * 352]
-    ldr     q23, [start, #4 * 384]
-
-    butterfly v20.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v21.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v20.4s, v21.4s, v26.4s, v29.4s, v30.4s, v31.4s
-    butterfly v22.4s, v23.4s, v27.4s, v29.4s, v30.4s, v31.4s
-
-    str     q20, [start, #4 * 288]
-    str     q21, [start, #4 * 320]
-    str     q22, [start, #4 * 352]
-    str     q23, [start, #4 * 384]
-
-    add start, start, #16           // Move to the next chunk
-
-    .endr
-
-
-
-
 
     /* NTT forward layer 5: length = 16, ridx = 15, loops = 16 */
     __asm_ntt_forward_layer 16, 15, 16
@@ -362,7 +286,7 @@ __asm_ntt_forward:
 
     sqdmulh v2.4s, v0.4s, v5.4s     // Mulhi[a, B]
     mul     v3.4s, v0.4s, v6.4s     // Mullo[a, B']
-    sqdmulh v3.4s, v3.4s, v28.4s[2]  // Mulhi[M, Mullo[a, B']]
+    sqdmulh v3.4s, v3.4s, v28.4s[2] // Mulhi[M, Mullo[a, B']]
     sub     v2.4s, v2.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
 
     /* Execute _asimd_sub_add */
@@ -418,7 +342,7 @@ __asm_ntt_forward:
 
     sqdmulh v2.4s, v0.4s, v5.4s     // Mulhi[a, B]
     mul     v3.4s, v0.4s, v6.4s     // Mullo[a, B']
-    sqdmulh v3.4s, v3.4s, v28.4s[2]  // Mulhi[M, Mullo[a, B']]
+    sqdmulh v3.4s, v3.4s, v28.4s[2] // Mulhi[M, Mullo[a, B']]
     sub     v2.4s, v2.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
 
     /* Execute _asimd_sub_add */
