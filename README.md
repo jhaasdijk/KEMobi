@@ -11,24 +11,27 @@ The directory structure currently looks like this:
 $ tree -dL 1
 
 .
+├── crypto_kem
 ├── enableccnt
-├── ntruprime-20201007
+├── mk
 └── samples
 
-3 directories
+4 directories
 ```
 
-- `enableccnt` contains the source for setting up a kernel module to enable
-user space access to the `PMCCNTR_EL0` System register. This allows us to
-read the `PMCCNTR_EL0` register which holds the value of the processor cycle
-counter.
+- `crypto_kem` contains the optimized NTRU Prime software implementation
+(`ntrulpr761`). This has been taken and modified from the original NTRU Prime
+NISTPQC full submission package, last updated 7 October 2020, which is made
+available through their [web page](https://ntruprime.cr.yp.to/).
 
-- `ntruprime-20201007` contains the NTRU Prime software and supporting
-documentation. This has been taken from the original NTRU Prime NISTPQC full
-submission package, last updated 7 October 2020. All of this (and more) is
-made available through their [web page](https://ntruprime.cr.yp.to/).
+- `enableccnt` contains the source for setting up a kernel module to enable user
+space access to the `PMCCNTR_EL0` System register. This allows us to read the
+`PMCCNTR_EL0` register which holds the value of the processor cycle counter.
 
-- `samples` contains various directories that change every now and again. It's
+- `mk` contains shared Makefile components which can be reused throughout the
+repository.
+
+- `samples` contains various directories that change every now and again. Its
 main use is to provide a structured space for prototyping and developing sources
 related to this thesis. Please refer to the directory specific documentation for
 more information.
