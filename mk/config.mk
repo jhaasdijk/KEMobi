@@ -28,10 +28,8 @@ OPT = -O3 -march=armv8-a+simd -mtune=cortex-a72 -mcpu=cortex-a72+simd
 EXP = -fomit-frame-pointer
 
 # Turn on extended warnings
-WAR = -Wall -Wextra -Wmissing-prototypes -Wredundant-decls\
-	-Wstrict-prototypes -Wundef -Wshadow -Wconversion -Wfloat-equal\
-	-Wpointer-arith -Wcast-align -Wswitch-default -Wswitch-enum\
-	-Wunreachable-code
+WAR = -Wall -Wcast-align -Wfloat-equal -Wpointer-arith -Wredundant-decls \
+	-Wshadow -Wswitch-default -Wswitch-enum -Wundef -Wunreachable-code
 
 # Defining a C standard to which we conform
 STD = -std=gnu17
