@@ -229,12 +229,9 @@ __asm_ntt_forward:
     str     q22, [start, #4 * 448]
     str     q23, [start, #4 * 480]
 
-    add start, start, #16           // Move to the next chunk
+    add     start, start, #16       // Move to the next chunk
 
     .endr
-
-    sub loop_ctr, loop_ctr, #1      // Decrement loop counter
-    cbnz loop_ctr, 1b               // Compare and Branch on Nonzero
 
     /* Layers 5+6+7 */
     /* NTT forward layer 5: length = 16, ridx = 15, loops = 16 */
