@@ -94,9 +94,12 @@ __asm_ntt_forward:
     /* NTT forward layer 4: length = 32,  ridx = 7, loops = 8 */
 
     mov     start, x0               // Store *coefficients[0]
-    mov     loop_ctr, #8            // 32 / 4
 
-    1:
+    /* Repeat this sequence 8 times. We need to perform the calculation for
+     * every integer coefficient. We have intervals of 32 values and we can take
+     * 4 values in one go. 32 / 4 = 8. */
+
+    .rept 8
 
     ldr     q0, [start, #4 * 0]
     ldr     q1, [start, #4 * 32]
@@ -118,8 +121,8 @@ __asm_ntt_forward:
     ldr     q22, [start, #4 * 448]
     ldr     q23, [start, #4 * 480]
 
-    mov     x3, x1 // the original B B' pointers
-    mov     x4, x2
+    mov     x3, x1                  // Restore the original B pointer
+    mov     x4, x2                  // Restore the original B' pointer
 
     // LAYER 1
 
@@ -227,6 +230,8 @@ __asm_ntt_forward:
     str     q23, [start, #4 * 480]
 
     add start, start, #16           // Move to the next chunk
+
+    .endr
 
     sub loop_ctr, loop_ctr, #1      // Decrement loop counter
     cbnz loop_ctr, 1b               // Compare and Branch on Nonzero
