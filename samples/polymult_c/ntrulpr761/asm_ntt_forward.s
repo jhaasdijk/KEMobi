@@ -236,14 +236,90 @@ __asm_ntt_forward:
     sub loop_ctr, loop_ctr, #1      // Decrement loop counter
     cbnz loop_ctr, 1b               // Compare and Branch on Nonzero
 
+    /* Layers 5+6+7 */
     /* NTT forward layer 5: length = 16, ridx = 15, loops = 16 */
-    __asm_ntt_forward_layer 16, 15, 16
+    /* NTT forward layer 6: length = 8,  ridx = 31, loops = 32 */
+    /* NTT forward layer 7: length = 4,  ridx = 63, loops = 64 */
 
-    /* NTT forward layer 6: length = 8, ridx = 31, loops = 32 */
-    __asm_ntt_forward_layer 8, 31, 32
+    mov     start, x0               // Store *coefficients[0]
 
-    /* NTT forward layer 7: length = 4, ridx = 63, loops = 64 */
-    __asm_ntt_forward_layer 4, 63, 64
+    /* Store layer specific values  */
+
+    add     x3, x1, #4 * 15         // LAYER 5: ridx, used for indexing B
+    add     x4, x2, #4 * 15         // LAYER 5: ridx, used for indexing B'
+
+    add     x5, x1, #4 * 31         // LAYER 6: ridx, used for indexing B
+    add     x6, x2, #4 * 31         // LAYER 6: ridx, used for indexing B'
+
+    add     x7, x1, #4 * 63         // LAYER 7: ridx, used for indexing B
+    add     x9, x2, #4 * 63         // LAYER 7: ridx, used for indexing B'
+
+    /* Repeat this sequence 16 times. We need to perform the calculation for
+     * every integer coefficient. We perform the calculation on 32 values in one
+     * go. 512 / 32 = 16. */
+
+    .rept 16
+
+    ldr     q0, [start, #4 * 0]
+    ldr     q1, [start, #4 * 4]
+    ldr     q2, [start, #4 * 8]
+    ldr     q3, [start, #4 * 12]
+    ldr     q4, [start, #4 * 16]
+    ldr     q5, [start, #4 * 20]
+    ldr     q6, [start, #4 * 24]
+    ldr     q7, [start, #4 * 28]
+
+    // LAYER 5
+
+    ld1     {v28.s}[0], [x3], #4
+    ld1     {v28.s}[1], [x4], #4
+    butterfly v0.4s, v4.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v1.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v2.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v3.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    // LAYER 6
+
+    ld1     {v28.s}[0], [x5], #4
+    ld1     {v28.s}[1], [x6], #4
+    butterfly v0.4s, v2.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v1.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x5], #4
+    ld1     {v28.s}[1], [x6], #4
+    butterfly v4.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v5.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    // LAYER 7
+
+    ld1     {v28.s}[0], [x7], #4
+    ld1     {v28.s}[1], [x9], #4
+    butterfly v0.4s, v1.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x7], #4
+    ld1     {v28.s}[1], [x9], #4
+    butterfly v2.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x7], #4
+    ld1     {v28.s}[1], [x9], #4
+    butterfly v4.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    ld1     {v28.s}[0], [x7], #4
+    ld1     {v28.s}[1], [x9], #4
+    butterfly v6.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+
+    str     q0, [start, #4 * 0]
+    str     q1, [start, #4 * 4]
+    str     q2, [start, #4 * 8]
+    str     q3, [start, #4 * 12]
+    str     q4, [start, #4 * 16]
+    str     q5, [start, #4 * 20]
+    str     q6, [start, #4 * 24]
+    str     q7, [start, #4 * 28]
+
+    add     start, start, #4 * 32   // Update pointer to next first coefficient
+
+    .endr
 
     /* NTT forward layer 8: length = 2, ridx = 127, loops = 128 */
 
