@@ -21,44 +21,6 @@
     add     \lower, \lower, \t1
 .endm
 
-.macro __asm_ntt_forward_layer len, ridx, loops
-    mov     start, x0               // Store *coefficients[0]
-    add     last, x0, #4 * \len     // Store *coefficients[len]
-
-    /* Store layer specific values  */
-
-    add     x3, x1, #4 * \ridx      // ridx, used for indexing B
-    add     x4, x2, #4 * \ridx      // ridx, used for indexing B'
-    mov     loop_ctr, #1 * \loops   // loops (NTT_P / len / 2)
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'
-
-    1:
-
-    /* Perform the ASIMD arithmetic instructions for a forward butterfly */
-
-    ldr     q1, [start, #4 * \len]  // Load the upper coefficients
-    ldr     q0, [start]             // Load the lower coefficients
-
-    butterfly v0.4s, v1.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    str     q1, [start, #4 * \len]  // Store the upper coefficients
-    str     q0, [start], #16        // Store the lower coefficients and move to next chunk
-
-    cmp     last, start             // Check if we have reached the next chunk
-    b.ne    1b
-
-    add     start, last, #4 * \len  // Update pointer to next first coefficient
-    add     last, last, #8 * \len   // Update pointer to next last coefficient
-
-    ld1     {v28.s}[0], [x3], #4    // Load next precomputed B
-    ld1     {v28.s}[1], [x4], #4    // Load next precomputed B'
-
-    sub loop_ctr, loop_ctr, #1      // Decrement loop counter
-    cbnz loop_ctr, 1b               // Compare and Branch on Nonzero
-.endm
-
 __asm_ntt_forward:
 
     /* Due to our choice of registers we do not need (to store) callee-saved
