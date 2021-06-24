@@ -136,3 +136,29 @@ warming up the cache and ensuring that it contains valid data. During
 performance testing it is important to take the frequency of cache hits / cache
 misses into account.
 
+* `24/06`
+
+```terminal
+Zx(F) * Zx(G) % (x^512 - 1) % 6984193
+| NTT forward          | med: 7946      |
+| Product              | med: 6706      |
+| NTT inverse          | med: 11659     |
+| Complete             | med: 39132     |
+
+Zx(F) * Zx(G) % (x^761 - x - 1) % 4591
+| Zero padding         | med: 854       |
+| Good's forward       | med: 5660      |
+| NTT forward          | med: 7941      |
+| Product              | med: 101500    |
+| NTT inverse          | med: 11641     |
+| Good's inverse       | med: 5661      |
+| Zx % (x^761 - x - 1) | med: 3125      |
+| Zx % 6984193         | med: 4588      |
+| Zx % 4591            | med: 4588      |
+| Complete             | med: 244226    |
+```
+
+Further reductions in the cycle count for 'NTT forward, NTT inverse' has been
+achieved by minimizing load, store operations by merging multiple layers
+together (1234, 567, 89) and preloading the required roots for 1234.
+
