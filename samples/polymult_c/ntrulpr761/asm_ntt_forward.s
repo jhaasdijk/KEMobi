@@ -9,12 +9,12 @@
 
 /* Provide macro definitions */
 
-.macro butterfly lower, upper, twiddle, t1, t2, t3
+.macro butterfly lower, upper, twid1, twid2, t1, t2
     /* _asimd_mul_red */
-    sqdmulh \t1, \upper, \twiddle[0]
-    mul     \t2, \upper, \twiddle[1]
-    sqdmulh \t3, \t2, v28.4s[2]
-    sub     \t1, \t1, \t3
+    sqdmulh \t1, \upper, \twid1
+    mul     \t2, \upper, \twid2
+    sqdmulh \t2, \t2, v28.4s[2]
+    sub     \t1, \t1, \t2
 
     /* _asimd_sub_add */
     sub     \upper, \lower, \t1
@@ -30,14 +30,7 @@ __asm_ntt_forward:
 
     /* Alias registers for a specific purpose (and readability) */
 
-    loop_ctr .req x10
-
-    start   .req x11    // Store pointer to the first integer coefficient
-    last    .req x12    // Store pointer to the last integer coefficient
-
-    MR_top  .req w13    // Store the precomputed B value for _asimd_mul_red
-    MR_bot  .req w14    // Store the precomputed B' value for _asimd_mul_red
-
+    start   .req x14    // Store pointer to the first integer coefficient
     M       .req w15    // Store the constant value M = 6984193
 
     /* Initialize constant values. Note that the move instruction is only able
@@ -56,6 +49,23 @@ __asm_ntt_forward:
     /* NTT forward layer 4: length = 32,  ridx = 7, loops = 8 */
 
     mov     start, x0               // Store *coefficients[0]
+
+    /* Store layer specific values  */
+
+    add     x3, x1, #4 * 7          // Store *B[7]
+    add     x4, x2, #4 * 7          // Store *B'[7]
+
+    /* Preload the required root values, we have enough room */
+    /* This works because there are actually only 16 different values */
+    /* [7] == [3] == [1] == [0] */
+    /* [8] == [4] == [2] */
+    /* [9] == [5] */
+    /* [10] == [6] */
+
+    ldr     q24, [x3], #4 * 4       // B[7, 8, 9, 10]
+    ldr     q25, [x3], #4 * 4       // B[11, 12, 13, 14]
+    ldr     q26, [x4], #4 * 4       // B'[7, 8, 9, 10]
+    ldr     q27, [x4]               // B'[11, 12, 13, 14]
 
     /* Repeat this sequence 8 times. We need to perform the calculation for
      * every integer coefficient. We have intervals of 32 values and we can take
@@ -83,93 +93,49 @@ __asm_ntt_forward:
     ldr     q22, [start, #4 * 448]
     ldr     q23, [start, #4 * 480]
 
-    mov     x3, x1                  // Restore the original B pointer
-    mov     x4, x2                  // Restore the original B' pointer
-
     // LAYER 1
 
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[0]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[0]
-    butterfly v0.4s, v16.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v17.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v2.4s, v18.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v3.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v4.4s, v20.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v5.4s, v21.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v6.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v7.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v0.4s, v16.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v1.4s, v17.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v2.4s, v18.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v3.4s, v19.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v4.4s, v20.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v5.4s, v21.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v6.4s, v22.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v7.4s, v23.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
 
     // LAYER 2
 
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[1]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[1]
-    butterfly v0.4s, v4.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v2.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v3.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[2]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[2]
-    butterfly v16.4s, v20.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v17.4s, v21.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v18.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v19.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v0.4s, v4.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v1.4s, v5.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v2.4s, v6.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v3.4s, v7.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v16.4s, v20.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    butterfly v17.4s, v21.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    butterfly v18.4s, v22.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    butterfly v19.4s, v23.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
 
     // LAYER 3
 
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[3]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[3]
-    butterfly v0.4s, v2.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[4]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[4]
-    butterfly v4.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v5.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[5]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[5]
-    butterfly v16.4s, v18.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v17.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[6]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[6]
-    butterfly v20.4s, v22.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v21.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v0.4s, v2.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v1.4s, v3.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v4.4s, v6.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    butterfly v5.4s, v7.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    butterfly v16.4s, v18.4s, v24.4s[2], v26.4s[2], v30.4s, v31.4s
+    butterfly v17.4s, v19.4s, v24.4s[2], v26.4s[2], v30.4s, v31.4s
+    butterfly v20.4s, v22.4s, v24.4s[3], v26.4s[3], v30.4s, v31.4s
+    butterfly v21.4s, v23.4s, v24.4s[3], v26.4s[3], v30.4s, v31.4s
 
     // LAYER 4
 
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[7]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[7]
-    butterfly v0.4s, v1.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[8]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[8]
-    butterfly v2.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[9]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[9]
-    butterfly v4.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[10]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[10]
-    butterfly v6.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[11]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[11]
-    butterfly v16.4s, v17.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[12]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[12]
-    butterfly v18.4s, v19.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[13]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[13]
-    butterfly v20.4s, v21.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x3], #4    // Load precomputed B[14]
-    ld1     {v28.s}[1], [x4], #4    // Load precomputed B'[14]
-    butterfly v22.4s, v23.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v0.4s, v1.4s, v24.4s[0], v26.4s[0], v30.4s, v31.4s
+    butterfly v2.4s, v3.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    butterfly v4.4s, v5.4s, v24.4s[2], v26.4s[2], v30.4s, v31.4s
+    butterfly v6.4s, v7.4s, v24.4s[3], v26.4s[3], v30.4s, v31.4s
+    butterfly v16.4s, v17.4s, v25.4s[0], v27.4s[0], v30.4s, v31.4s
+    butterfly v18.4s, v19.4s, v25.4s[1], v27.4s[1], v30.4s, v31.4s
+    butterfly v20.4s, v21.4s, v25.4s[2], v27.4s[2], v30.4s, v31.4s
+    butterfly v22.4s, v23.4s, v25.4s[3], v27.4s[3], v30.4s, v31.4s
 
     str     q0, [start, #4 * 0]
     str     q1, [start, #4 * 32]
@@ -232,40 +198,31 @@ __asm_ntt_forward:
 
     ld1     {v28.s}[0], [x3], #4
     ld1     {v28.s}[1], [x4], #4
-    butterfly v0.4s, v4.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v2.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v3.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v0.4s, v4.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    butterfly v1.4s, v5.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    butterfly v2.4s, v6.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    butterfly v3.4s, v7.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
 
     // LAYER 6
 
     ld1     {v28.s}[0], [x5], #4
     ld1     {v28.s}[1], [x6], #4
-    butterfly v0.4s, v2.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v1.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v0.4s, v2.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    butterfly v1.4s, v3.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
 
     ld1     {v28.s}[0], [x5], #4
     ld1     {v28.s}[1], [x6], #4
-    butterfly v4.4s, v6.4s, v28.4s, v29.4s, v30.4s, v31.4s
-    butterfly v5.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    butterfly v4.4s, v6.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    butterfly v5.4s, v7.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
 
     // LAYER 7
 
-    ld1     {v28.s}[0], [x7], #4
-    ld1     {v28.s}[1], [x9], #4
-    butterfly v0.4s, v1.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x7], #4
-    ld1     {v28.s}[1], [x9], #4
-    butterfly v2.4s, v3.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x7], #4
-    ld1     {v28.s}[1], [x9], #4
-    butterfly v4.4s, v5.4s, v28.4s, v29.4s, v30.4s, v31.4s
-
-    ld1     {v28.s}[0], [x7], #4
-    ld1     {v28.s}[1], [x9], #4
-    butterfly v6.4s, v7.4s, v28.4s, v29.4s, v30.4s, v31.4s
+    ldr     q24, [x7], #16
+    ldr     q25, [x9], #16
+    butterfly v0.4s, v1.4s, v24.4s[0], v25.4s[0], v30.4s, v31.4s
+    butterfly v2.4s, v3.4s, v24.4s[1], v25.4s[1], v30.4s, v31.4s
+    butterfly v4.4s, v5.4s, v24.4s[2], v25.4s[2], v30.4s, v31.4s
+    butterfly v6.4s, v7.4s, v24.4s[3], v25.4s[3], v30.4s, v31.4s
 
     str     q0, [start, #4 * 0]
     str     q1, [start, #4 * 4]
@@ -280,35 +237,25 @@ __asm_ntt_forward:
 
     .endr
 
+    /* Layers 8+9 */
     /* NTT forward layer 8: length = 2, ridx = 127, loops = 128 */
+    /* NTT forward layer 9: length = 1, ridx = 255, loops = 256 */
 
-    start_l .req x11
-    start_s .req x12
+    start_l .req x12
+    start_s .req x13
 
     mov     start_l, x0
     mov     start_s, x0
 
     /* Store layer specific values  */
 
-    add     x6, x1, #4 * 127        // ridx, used for indexing B
-    add     x7, x2, #4 * 127        // ridx, used for indexing B'
-    mov     loop_ctr, #1 * 64       // 512 / 8 = 64
+    add     x3, x1, #4 * 127        // LAYER 8: ridx, used for indexing B
+    add     x4, x2, #4 * 127        // LAYER 8: ridx, used for indexing B'
 
-    1:
+    add     x5, x1, #4 * 255        // LAYER 9: ridx, used for indexing B
+    add     x6, x2, #4 * 255        // LAYER 9: ridx, used for indexing B'
 
-    /* Load the precomputed roots */
-
-    ld1     {v5.s}[0], [x6]
-    ld1     {v5.s}[1], [x6], #4
-    ld1     {v5.s}[2], [x6]
-    ld1     {v5.s}[3], [x6], #4
-
-    ld1     {v6.s}[0], [x7]
-    ld1     {v6.s}[1], [x7], #4
-    ld1     {v6.s}[2], [x7]
-    ld1     {v6.s}[3], [x7], #4
-
-    /* Load the coefficients */
+    .rept 64
 
     ld1     {v1.s}[0], [start_l], #4
     ld1     {v1.s}[1], [start_l], #4
@@ -318,91 +265,66 @@ __asm_ntt_forward:
     ld1     {v1.s}[3], [start_l], #4
     ld1     {v0.s}[2], [start_l], #4
     ld1     {v0.s}[3], [start_l], #4
+
+    // LAYER 8
+
+    ld1     {v24.s}[0], [x3]
+    ld1     {v24.s}[1], [x3], #4
+    ld1     {v24.s}[2], [x3]
+    ld1     {v24.s}[3], [x3], #4
+
+    ld1     {v25.s}[0], [x4]
+    ld1     {v25.s}[1], [x4], #4
+    ld1     {v25.s}[2], [x4]
+    ld1     {v25.s}[3], [x4], #4
+
+    sqdmulh v30.4s, v0.4s, v24.4s       // Mulhi[a, B]
+    mul     v31.4s, v0.4s, v25.4s       // Mullo[a, B']
+    sqdmulh v31.4s, v31.4s, v28.4s[2]   // Mulhi[M, Mullo[a, B']]
+    sub     v30.4s, v30.4s, v31.4s      // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+
+    sub     v0.4s, v1.4s, v30.4s
+    add     v1.4s, v1.4s, v30.4s
 
     // q0 contains coefficients [2, 3, 6, 7]
     // q1 contains coefficients [0, 1, 4, 5]
 
-    /* Execute _asimd_mul_red */
+    mov     v2.s[0], v1.s[1]
+    mov     v2.s[1], v0.s[1]
+    mov     v2.s[2], v1.s[3]
+    mov     v2.s[3], v0.s[3]
 
-    sqdmulh v2.4s, v0.4s, v5.4s     // Mulhi[a, B]
-    mul     v3.4s, v0.4s, v6.4s     // Mullo[a, B']
-    sqdmulh v3.4s, v3.4s, v28.4s[2] // Mulhi[M, Mullo[a, B']]
-    sub     v2.4s, v2.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
+    mov     v3.s[0], v1.s[0]
+    mov     v3.s[1], v0.s[0]
+    mov     v3.s[2], v1.s[2]
+    mov     v3.s[3], v0.s[2]
 
-    /* Execute _asimd_sub_add */
+    // q2 contains coefficients [1, 3, 5, 7]
+    // q3 contains coefficients [0, 2, 4, 6]
 
-    sub     v0.4s, v1.4s, v2.4s
-    add     v1.4s, v1.4s, v2.4s
+    // LAYER 9
 
-    /* Store the result */
+    ldr     q26, [x5], #16
+    ldr     q27, [x6], #16
 
-    st1     {v1.s}[0], [start_s], #4
-    st1     {v1.s}[1], [start_s], #4
-    st1     {v0.s}[0], [start_s], #4
-    st1     {v0.s}[1], [start_s], #4
-    st1     {v1.s}[2], [start_s], #4
-    st1     {v1.s}[3], [start_s], #4
-    st1     {v0.s}[2], [start_s], #4
-    st1     {v0.s}[3], [start_s], #4
+    sqdmulh v30.4s, v2.4s, v26.4s       // Mulhi[a, B]
+    mul     v31.4s, v2.4s, v27.4s       // Mullo[a, B']
+    sqdmulh v31.4s, v31.4s, v28.4s[2]   // Mulhi[M, Mullo[a, B']]
+    sub     v30.4s, v30.4s, v31.4s      // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
 
-    sub     loop_ctr, loop_ctr, #1  // Decrement loop counter by 1
-    cbnz    loop_ctr, 1b            // Compare and Branch on Nonzero
+    sub     v2.4s, v3.4s, v30.4s
+    add     v3.4s, v3.4s, v30.4s
 
-    /* NTT forward layer 9: length = 1, ridx = 255, loops = 256 */
+    st1     {v3.s}[0], [start_s], #4
+    st1     {v2.s}[0], [start_s], #4
+    st1     {v3.s}[1], [start_s], #4
+    st1     {v2.s}[1], [start_s], #4
+    st1     {v3.s}[2], [start_s], #4
+    st1     {v2.s}[2], [start_s], #4
+    st1     {v3.s}[3], [start_s], #4
+    st1     {v2.s}[3], [start_s], #4
 
-    mov     start_l, x0
-    mov     start_s, x0
-
-    /* Store layer specific values  */
-
-    add     x6, x1, #4 * 255        // ridx, used for indexing B
-    add     x7, x2, #4 * 255        // ridx, used for indexing B'
-    mov     loop_ctr, #1 * 64       // 512 / 8 = 64
-
-    1:
-
-    ldr q5, [x6], #16               // Load precomputed B
-    ldr q6, [x7], #16               // Load precomputed B'
-
-    /* Load the coefficients */
-
-    ld1     {v1.s}[0], [start_l], #4
-    ld1     {v0.s}[0], [start_l], #4
-    ld1     {v1.s}[1], [start_l], #4
-    ld1     {v0.s}[1], [start_l], #4
-    ld1     {v1.s}[2], [start_l], #4
-    ld1     {v0.s}[2], [start_l], #4
-    ld1     {v1.s}[3], [start_l], #4
-    ld1     {v0.s}[3], [start_l], #4
-
-    // q0 contains coefficients [1, 3, 5, 7]
-    // q1 contains coefficients [0, 2, 4, 6]
-
-    /* Execute _asimd_mul_red */
-
-    sqdmulh v2.4s, v0.4s, v5.4s     // Mulhi[a, B]
-    mul     v3.4s, v0.4s, v6.4s     // Mullo[a, B']
-    sqdmulh v3.4s, v3.4s, v28.4s[2] // Mulhi[M, Mullo[a, B']]
-    sub     v2.4s, v2.4s, v3.4s     // Mulhi[a, B] − Mulhi[M, Mullo[a, B']]
-
-    /* Execute _asimd_sub_add */
-
-    sub     v0.4s, v1.4s, v2.4s
-    add     v1.4s, v1.4s, v2.4s
-
-    /* Store the result */
-
-    st1     {v1.s}[0], [start_s], #4
-    st1     {v0.s}[0], [start_s], #4
-    st1     {v1.s}[1], [start_s], #4
-    st1     {v0.s}[1], [start_s], #4
-    st1     {v1.s}[2], [start_s], #4
-    st1     {v0.s}[2], [start_s], #4
-    st1     {v1.s}[3], [start_s], #4
-    st1     {v0.s}[3], [start_s], #4
-
-    sub     loop_ctr, loop_ctr, #1  // Decrement loop counter by 1
-    cbnz    loop_ctr, 1b            // Compare and Branch on Nonzero
+    .endr
 
     /* Restore any callee-saved registers (and possibly the procedure call link
      * register) before returning control to our caller. We avoided using such
