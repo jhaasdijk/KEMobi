@@ -47,6 +47,9 @@ optimizations are:
   instructions whenever we can keep values inside a register.
 * Merging multiple layers for the forward and inverse NTT transformation.
 * Preloading the required roots for layers 1234.
+* Eliminate multiplications by 1
+* Optimize the merging of layers 8+9 by using LD4. This saves us from
+  having to repack the coefficients in between the layer operations.
 
 <br>
 
@@ -54,10 +57,10 @@ optimizations are:
 
 | Fragment             | Cycles         |
 | --------             | ------         |
-| NTT forward          | med: 7946      |
-| Product              | med: 6706      |
-| NTT inverse          | med: 11659     |
-| Complete             | med: 39132     |
+| NTT forward          | med: 5933      |
+| Product              | med: 6453      |
+| NTT inverse          | med: 6689      |
+| Complete             | med: 32335     |
 
 <br>
 
@@ -67,14 +70,14 @@ optimizations are:
 | --------             | ------         |
 | Zero padding         | med: 854       |
 | Good's forward       | med: 5660      |
-| NTT forward          | med: 7941      |
-| Product              | med: 101500    |
-| NTT inverse          | med: 11641     |
+| NTT forward          | med: 5929      |
+| Product              | med: 88701     |
+| NTT inverse          | med: 6689      |
 | Good's inverse       | med: 5661      |
 | Zx % (x^761 - x - 1) | med: 3125      |
 | Zx % 6984193         | med: 4588      |
 | Zx % 4591            | med: 4588      |
-| Complete             | med: 244226    |
+| Complete             | med: 228481        |
 
 More extensive and accurate benchmarking of the cost has been achieved by
 warming up the cache and ensuring that it contains valid data. During
