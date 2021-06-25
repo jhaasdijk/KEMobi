@@ -52,4 +52,18 @@ extern void __asm_ntt_forward(int32_t *coefficients, int32_t *MR_top, int32_t *M
  */
 extern void __asm_ntt_inverse(int32_t *coefficients, int32_t *MR_inv_top, int32_t *MR_inv_bot);
 
+/**
+ * @brief Ensure that the coefficients stay within their allocated 32 bits
+ *
+ * Due to how the inverse NTT transformation is calculated, each layer increases
+ * the possible bitsize of the integer coefficients by 1. Performing 9 layers
+ * increases the possible bitsize of the integer coefficients by 9. To ensure
+ * that the integer coefficients stay within their allocated 32 bits we either
+ * 1) need to ensure that all values are at most 23 bits at the start of the
+ * function or 2) perform an intermediate reduction.
+ *
+ * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
+ */
+extern void __asm_reduce_coefficients(int32_t *coefficients);
+
 #endif
