@@ -137,6 +137,17 @@ void ntt761(int32_t *fg, int32_t *f, int32_t *g)
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
         C_vec[idx] = modulo(C_vec[idx], NTT_Q);
+
+        /* Weigh the coefficients in { - (q-1)/2, ..., (q-1)/2  */
+
+        if (C_vec[idx] > NTT_Q / 2)
+        {
+            C_vec[idx] = C_vec[idx] - NTT_Q;
+        }
+        if (C_vec[idx] < -NTT_Q / 2)
+        {
+            C_vec[idx] = C_vec[idx] + NTT_Q;
+        }
     }
 
     /**
@@ -149,6 +160,17 @@ void ntt761(int32_t *fg, int32_t *f, int32_t *g)
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
         fg[idx] = modulo(C_vec[idx], NTRU_Q);
+
+        /* Weigh the coefficients in { - (q-1)/2, ..., (q-1)/2  */
+
+        if (fg[idx] > NTRU_Q / 2)
+        {
+            fg[idx] = fg[idx] - NTRU_Q;
+        }
+        if (fg[idx] < -NTRU_Q / 2)
+        {
+            fg[idx] = fg[idx] + NTRU_Q;
+        }
     }
 }
 
@@ -351,12 +373,17 @@ int main()
 
     ntt761(poly_one, poly_one, poly_two);
 
+    /**
+     * @brief Test the result of the computation against the known test values
+     */
+
     for (size_t idx = 0; idx < NTRU_P; idx++)
     {
         if (poly_one[idx] != result[idx])
         {
             printf("%s\n", "This is not correct!");
             printf("%s%ld\n", "Error at index: ", idx);
+            printf("%d != %d\n", poly_one[idx], result[idx]);
             return -1;
         }
     }
