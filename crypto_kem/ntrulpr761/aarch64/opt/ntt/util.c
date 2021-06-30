@@ -100,8 +100,8 @@ void benchmark(uint64_t *arr, char *preface)
 
     sort(arr);
 
-    printf("| " CYAN "%-28s" RESET "| ", preface);
-    printf("med: %ld \t|\n", median(arr));
+    printf("| " CYAN "%-41s" RESET "| ", preface);
+    printf("med: %ld   \t|\n", median(arr));
 }
 
 /**

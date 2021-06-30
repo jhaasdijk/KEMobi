@@ -1,24 +1,4 @@
-#ifdef KAT
-#include <stdio.h>
-#endif
-
-#include <stdlib.h> /* for abort() in case of OpenSSL failures */
-#include "params.h"
-
-#include "randombytes.h"
-#include "crypto_hash_sha512.h"
-#ifdef LPR
-#include "crypto_stream_aes256ctr.h"
-#endif
-
-#include "int8.h"
-#include "int16.h"
-#include "int32.h"
-#include "uint16.h"
-#include "uint32.h"
-#include "crypto_sort_uint32.h"
-#include "Encode.h"
-#include "Decode.h"
+#include "speed_kem.h"
 
 /* ----- masks */
 
@@ -200,7 +180,7 @@ static int R3_recip(small *out,const small *in)
 /* ----- polynomials mod q */
 
 /* h = f*g in the ring Rq */
-static void Rq_mult_small(Fq *h,const Fq *f,const small *g)
+void Rq_mult_small(Fq *h,const Fq *f,const small *g)
 {
   ntt761(h, f, g);
 }
@@ -267,7 +247,7 @@ static int Rq_recip3(Fq *out,const small *in)
 
 /* ----- rounded polynomials mod q */
 
-static void Round(Fq *out,const Fq *a)
+void Round(Fq *out,const Fq *a)
 {
   int i;
   for (i = 0;i < p;++i) out[i] = a[i]-F3_freeze(a[i]);
@@ -275,7 +255,7 @@ static void Round(Fq *out,const Fq *a)
 
 /* ----- sorting to generate short polynomial */
 
-static void Short_fromlist(small *out,const uint32 *in)
+void Short_fromlist(small *out,const uint32 *in)
 {
   uint32 L[p];
   int i;
@@ -291,7 +271,7 @@ static void Short_fromlist(small *out,const uint32 *in)
 #define Hash_bytes 32
 
 /* e.g., b = 0 means out = Hash0(in) */
-static void Hash_prefix(unsigned char *out,int b,const unsigned char *in,int inlen)
+void Hash_prefix(unsigned char *out,int b,const unsigned char *in,int inlen)
 {
   unsigned char x[inlen+1];
   unsigned char h[64];
@@ -318,7 +298,7 @@ static uint32 urandom32(void)
   return out[0]+out[1]+out[2]+out[3];
 }
 
-static void Short_random(small *out)
+void Short_random(small *out)
 {
   uint32 L[p];
   int i;
@@ -393,7 +373,7 @@ static void Decrypt(small *r,const Fq *c,const small *f,const small *ginv)
 #ifdef LPR
 
 /* (G,A),a = KeyGen(G); leaves G unchanged */
-static void KeyGen(Fq *A,small *a,const Fq *G)
+void KeyGen(Fq *A,small *a,const Fq *G)
 {
   Fq aG[p];
 
@@ -416,7 +396,7 @@ static void Encrypt(Fq *B,int8 *T,const int8 *r,const Fq *G,const Fq *A,const sm
 }
 
 /* r = Decrypt((B,T),a) */
-static void Decrypt(int8 *r,const Fq *B,const int8 *T,const small *a)
+void Decrypt(int8 *r,const Fq *B,const int8 *T,const small *a)
 {
   Fq aB[p];
   int i;
@@ -435,7 +415,7 @@ static void Decrypt(int8 *r,const Fq *B,const int8 *T,const small *a)
 #define Inputs_bytes (I/8)
 typedef int8 Inputs[I]; /* passed by reference */
 
-static void Inputs_encode(unsigned char *s,const Inputs r)
+void Inputs_encode(unsigned char *s,const Inputs r)
 {
   int i;
   for (i = 0;i < Inputs_bytes;++i) s[i] = 0;
@@ -471,7 +451,7 @@ static void Expand(uint32 *L,const unsigned char *k)
 
 #define Seeds_bytes 32
 
-static void Seeds_random(unsigned char *s)
+void Seeds_random(unsigned char *s)
 {
   randombytes(s,Seeds_bytes);
 }
@@ -483,7 +463,7 @@ static void Seeds_random(unsigned char *s)
 #ifdef LPR
 
 /* G = Generator(k) */
-static void Generator(Fq *G,const unsigned char *k)
+void Generator(Fq *G,const unsigned char *k)
 {
   uint32 L[p];
   int i;
@@ -542,7 +522,7 @@ static void XEncrypt(Fq *B,int8 *T,const int8 *r,const unsigned char *S,const Fq
 
 /* these are the only functions that rely on p mod 4 = 1 */
 
-static void Small_encode(unsigned char *s,const small *f)
+void Small_encode(unsigned char *s,const small *f)
 {
   small x;
   int i;
@@ -602,7 +582,7 @@ static void Rq_decode(Fq *r,const unsigned char *s)
 
 /* ----- encoding rounded polynomials */
 
-static void Rounded_encode(unsigned char *s,const Fq *r)
+void Rounded_encode(unsigned char *s,const Fq *r)
 {
   uint16 R[p],M[p];
   int i;
@@ -612,7 +592,7 @@ static void Rounded_encode(unsigned char *s,const Fq *r)
   Encode(s,R,M,p);
 }
 
-static void Rounded_decode(Fq *r,const unsigned char *s)
+void Rounded_decode(Fq *r,const unsigned char *s)
 {
   uint16 R[p],M[p];
   int i;
@@ -628,14 +608,14 @@ static void Rounded_decode(Fq *r,const unsigned char *s)
 
 #define Top_bytes (I/2)
 
-static void Top_encode(unsigned char *s,const int8 *T)
+void Top_encode(unsigned char *s,const int8 *T)
 {
   int i;
   for (i = 0;i < Top_bytes;++i)
     s[i] = T[2*i]+(T[2*i+1]<<4);
 }
 
-static void Top_decode(int8 *T,const unsigned char *s)
+void Top_decode(int8 *T,const unsigned char *s)
 {
   int i;
   for (i = 0;i < Top_bytes;++i) {
@@ -703,7 +683,7 @@ static void ZDecrypt(Inputs r,const unsigned char *C,const unsigned char *sk)
 #define SecretKeys_bytes Small_bytes
 #define PublicKeys_bytes (Seeds_bytes+Rounded_bytes)
 
-static void Inputs_random(Inputs r)
+void Inputs_random(Inputs r)
 {
   unsigned char s[Inputs_bytes];
   int i;
@@ -756,7 +736,7 @@ static void ZDecrypt(Inputs r,const unsigned char *c,const unsigned char *sk)
 #define Confirm_bytes 32
 
 /* h = HashConfirm(r,pk,cache); cache is Hash4(pk) */
-static void HashConfirm(unsigned char *h,const unsigned char *r,const unsigned char *pk,const unsigned char *cache)
+void HashConfirm(unsigned char *h,const unsigned char *r,const unsigned char *pk,const unsigned char *cache)
 {
 #ifndef LPR
   unsigned char x[Hash_bytes*2];
@@ -777,7 +757,7 @@ static void HashConfirm(unsigned char *h,const unsigned char *r,const unsigned c
 /* ----- session-key hash */
 
 /* k = HashSession(b,y,z) */
-static void HashSession(unsigned char *k,int b,const unsigned char *y,const unsigned char *z)
+void HashSession(unsigned char *k,int b,const unsigned char *y,const unsigned char *z)
 {
 #ifndef LPR
   unsigned char x[Hash_bytes+Ciphertexts_bytes+Confirm_bytes];
@@ -798,7 +778,7 @@ static void HashSession(unsigned char *k,int b,const unsigned char *y,const unsi
 /* ----- Streamlined NTRU Prime and NTRU LPRime */
 
 /* pk,sk = KEM_KeyGen() */
-static void KEM_KeyGen(unsigned char *pk,unsigned char *sk)
+void KEM_KeyGen(unsigned char *pk,unsigned char *sk)
 {
   int i;
 
@@ -809,7 +789,7 @@ static void KEM_KeyGen(unsigned char *pk,unsigned char *sk)
 }
 
 /* c,r_enc = Hide(r,pk,cache); cache is Hash4(pk) */
-static void Hide(unsigned char *c,unsigned char *r_enc,const Inputs r,const unsigned char *pk,const unsigned char *cache)
+void Hide(unsigned char *c,unsigned char *r_enc,const Inputs r,const unsigned char *pk,const unsigned char *cache)
 {
   Inputs_encode(r_enc,r);
 #ifndef KAT
