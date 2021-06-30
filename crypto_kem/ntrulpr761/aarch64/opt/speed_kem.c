@@ -285,7 +285,7 @@ void Hash_prefix(unsigned char *out,int b,const unsigned char *in,int inlen)
 
 /* ----- higher-level randomness */
 
-static uint32 urandom32(void)
+uint32 urandom32(void)
 {
   unsigned char c[4];
   uint32 out[4];

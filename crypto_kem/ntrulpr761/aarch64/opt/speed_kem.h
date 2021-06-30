@@ -51,4 +51,6 @@ void HashSession(unsigned char *k, int b, const unsigned char *y, const unsigned
 void Hide(unsigned char *c, unsigned char *r_enc, const Inputs r, const unsigned char *pk, const unsigned char *cache);
 void Decrypt(int8 *r, const Fq *B, const int8 *T, const small *a);
 
+uint32 urandom32(void);
+
 #endif

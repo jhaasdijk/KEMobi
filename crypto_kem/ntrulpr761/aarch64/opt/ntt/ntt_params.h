@@ -50,6 +50,6 @@
  * @brief Define benchmarking related parameters
  */
 
-#define NTESTS 25 /* Number of program executions in a single test */
+#define NTESTS 100 /* Number of program executions in a single test */
 
 #endif

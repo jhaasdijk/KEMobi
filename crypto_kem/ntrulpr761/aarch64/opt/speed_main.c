@@ -274,5 +274,32 @@ int main()
     benchmark(t0, "Hide()");
 
     printf("|------------------------------------------|--------------------|\n");
+
+    /* Benchmarking some utility functions */
+    printf("|- Short_random() -------------------------|--------------------|\n");
+
+    small out[p];
+    uint32 L[p];
+    for (i = 0; i < p; ++i)
+        L[i] = urandom32();
+
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        urandom32();
+    }
+    benchmark(t0, "urandom32()               ( x 761 )");
+
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Short_fromlist(out, L);
+    }
+    benchmark(t0, "Short_fromlist()          ( x 1   )");
+
+    printf("|------------------------------------------|--------------------|\n");
+
     return KAT_SUCCESS;
 }
