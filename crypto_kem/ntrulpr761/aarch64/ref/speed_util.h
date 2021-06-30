@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define NTESTS 25
+#define NTESTS 100
 
 /* ANSI escape codes */
 
