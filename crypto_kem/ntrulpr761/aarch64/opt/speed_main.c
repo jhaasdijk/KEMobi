@@ -193,7 +193,7 @@ int main()
         t0[i] = counter_read();
         Hash_prefix(cache, 4, pk, PublicKeys_bytes);
     }
-    benchmark(t0, "Hash_prefix(");
+    benchmark(t0, "Hash_prefix()");
 
     /*----------------------------------------*/
     for (i = 0; i < NTESTS; i++)

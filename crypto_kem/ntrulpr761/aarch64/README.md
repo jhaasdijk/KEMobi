@@ -5,29 +5,29 @@ implementation. They have been executed with `#define NTESTS 100`.
 
 ```shell
 |------------------------------------------|--------------------|
-| crypto_kem_keypair(pk, sk)               | med: 37593660      |
+| crypto_kem_keypair(pk, sk)               | med: 37537806      |
 |------------------------------------------|--------------------|
-| Seeds_random()                           | med: 11523         |
-| Generator()                              | med: 71280         |
-| Short_random()                           | med: 7254952       |
-| Rq_mult_small()                          | med: 30133944      |
+| Seeds_random()                           | med: 11526         |
+| Generator()                              | med: 70910         |
+| Short_random()                           | med: 7207628       |
+| Rq_mult_small()                          | med: 30133606      |
 | Round()                                  | med: 42034         |
-| Rounded_encode()                         | med: 14846         |
+| Rounded_encode()                         | med: 14807         |
 | Small_encode()                           | med: 613           |
-| randombytes()                            | med: 11523         |
-| Hash_prefix()                            | med: 8744          |
+| randombytes()                            | med: 11504         |
+| Hash_prefix()                            | med: 8745          |
 |------------------------------------------|--------------------|
-| crypto_kem_enc(ct, ss, pk)               | med: 60756027      |
+| crypto_kem_enc(ct, ss, pk)               | med: 60747989      |
 |------------------------------------------|--------------------|
-| Hash_prefix(                             | med: 8744          |
-| Inputs_random()                          | med: 12317         |
-| Hide()                                   | med: 60745593      |
-| HashSession()                            | med: 9836          |
+| Hash_prefix(                             | med: 8745          |
+| Inputs_random()                          | med: 12291         |
+| Hide()                                   | med: 60719623      |
+| HashSession()                            | med: 9835          |
 |------------------------------------------|--------------------|
-| crypto_kem_dec(ss1, ct, sk)              | med: 90946276      |
+| crypto_kem_dec(ss1, ct, sk)              | med: 90930810      |
 |------------------------------------------|--------------------|
-| Decrypt()                                | med: 30159316      |
-| Hide()                                   | med: 60715631      |
+| Decrypt()                                | med: 30159256      |
+| Hide()                                   | med: 60710242      |
 |------------------------------------------|--------------------|
 ```
 
@@ -38,33 +38,33 @@ implementation. They have been executed with `#define NTESTS 100`.
 
 ```shell
 |------------------------------------------|--------------------|
-| crypto_kem_keypair(pk, sk)               | med: 7744107       |
+| crypto_kem_keypair(pk, sk)               | med: 7761657       |
 |------------------------------------------|--------------------|
-| Seeds_random()                           | med: 11746         |
-| Generator()                              | med: 71237         |
-| Short_random()                           | med: 7296954       |
-| Rq_mult_small()                          | med: 249146        |
+| Seeds_random()                           | med: 11659         |
+| Generator()                              | med: 70710         |
+| Short_random()                           | med: 7324281       |
+| Rq_mult_small()                          | med: 241769        |
 | Round()                                  | med: 42034         |
-| Rounded_encode()                         | med: 15047         |
+| Rounded_encode()                         | med: 14857         |
 | Small_encode()                           | med: 620           |
-| randombytes()                            | med: 11656         |
-| Hash_prefix()                            | med: 8753          |
+| randombytes()                            | med: 11713         |
+| Hash_prefix()                            | med: 8746          |
 |------------------------------------------|--------------------|
-| crypto_kem_enc(ct, ss, pk)               | med: 990034        |
+| crypto_kem_enc(ct, ss, pk)               | med: 996576        |
 |------------------------------------------|--------------------|
-| Hash_prefix(                             | med: 8757          |
-| Inputs_random()                          | med: 12472         |
-| Hide()                                   | med: 952573        |
-| HashSession()                            | med: 9854          |
+| Hash_prefix()                            | med: 8746          |
+| Inputs_random()                          | med: 12481         |
+| Hide()                                   | med: 956928        |
+| HashSession()                            | med: 9889          |
 |------------------------------------------|--------------------|
-| crypto_kem_dec(ss1, ct, sk)              | med: 1292251       |
+| crypto_kem_dec(ss1, ct, sk)              | med: 1299607       |
 |------------------------------------------|--------------------|
-| Decrypt()                                | med: 276801        |
-| Hide()                                   | med: 954705        |
+| Decrypt()                                | med: 271826        |
+| Hide()                                   | med: 957394        |
 |------------------------------------------|--------------------|
 |- Short_random() -------------------------|--------------------|
-| urandom32()               ( x 761 )      | med: 9348          |
-| Short_fromlist()          ( x 1   )      | med: 187410        |
+| urandom32()               ( x 761 )      | med: 9332          |
+| Short_fromlist()          ( x 1   )      | med: 187470        |
 |------------------------------------------|--------------------|
 ```
 
@@ -75,3 +75,7 @@ illustrate how many times these routines are used within `Short_random()`.
 Currently the only difference compared to the reference implementation is the
 use of NTT based polynomial multiplication. This is most notable in the cost
 comparison between `Rq_mult_small()`.
+
+**In total** this means that the performance cost for the key generation,
+encapsulation and decapsulation of the reference implementation is reduced by
+79.32%, 98.36% and 98.57% respectively in the optimized implementation.
