@@ -75,7 +75,7 @@ static Fq Fq_freeze(int32 x)
 #ifndef LPR
 
 static Fq Fq_recip(Fq a1)
-{ 
+{
   int i = 1;
   Fq ai = a1;
 
@@ -84,7 +84,7 @@ static Fq Fq_recip(Fq a1)
     i += 1;
   }
   return ai;
-} 
+}
 
 #endif
 
@@ -153,11 +153,11 @@ static void R3_mult(small *h,const small *f,const small *g)
 
 /* returns 0 if recip succeeded; else -1 */
 static int R3_recip(small *out,const small *in)
-{ 
+{
   small f[p+1],g[p+1],v[p+1],r[p+1];
   int i,loop,delta;
   int sign,swap,t;
-  
+
   for (i = 0;i < p+1;++i) v[i] = 0;
   for (i = 0;i < p+1;++i) r[i] = 0;
   r[0] = 1;
@@ -165,35 +165,35 @@ static int R3_recip(small *out,const small *in)
   f[0] = 1; f[p-1] = f[p] = -1;
   for (i = 0;i < p;++i) g[p-1-i] = in[i];
   g[p] = 0;
-    
-  delta = 1; 
+
+  delta = 1;
 
   for (loop = 0;loop < 2*p-1;++loop) {
     for (i = p;i > 0;--i) v[i] = v[i-1];
     v[0] = 0;
-    
+
     sign = -g[0]*f[0];
     swap = int16_negative_mask(-delta) & int16_nonzero_mask(g[0]);
     delta ^= swap&(delta^-delta);
     delta += 1;
-    
+
     for (i = 0;i < p+1;++i) {
       t = swap&(f[i]^g[i]); f[i] ^= t; g[i] ^= t;
       t = swap&(v[i]^r[i]); v[i] ^= t; r[i] ^= t;
     }
-  
+
     for (i = 0;i < p+1;++i) g[i] = F3_freeze(g[i]+sign*f[i]);
     for (i = 0;i < p+1;++i) r[i] = F3_freeze(r[i]+sign*v[i]);
 
     for (i = 0;i < p;++i) g[i] = g[i+1];
     g[p] = 0;
   }
-  
+
   sign = f[0];
   for (i = 0;i < p;++i) out[i] = sign*v[p-1-i];
-  
+
   return int16_nonzero_mask(delta);
-} 
+}
 
 #endif
 
@@ -202,27 +202,7 @@ static int R3_recip(small *out,const small *in)
 /* h = f*g in the ring Rq */
 static void Rq_mult_small(Fq *h,const Fq *f,const small *g)
 {
-  Fq fg[p+p-1];
-  Fq result;
-  int i,j;
-
-  for (i = 0;i < p;++i) {
-    result = 0;
-    for (j = 0;j <= i;++j) result = Fq_freeze(result+f[j]*(int32)g[i-j]);
-    fg[i] = result;
-  }
-  for (i = p;i < p+p-1;++i) {
-    result = 0;
-    for (j = i-p+1;j < p;++j) result = Fq_freeze(result+f[j]*(int32)g[i-j]);
-    fg[i] = result;
-  }
-
-  for (i = p+p-2;i >= p;--i) {
-    fg[i-p] = Fq_freeze(fg[i-p]+fg[i]);
-    fg[i-p+1] = Fq_freeze(fg[i-p+1]+fg[i]);
-  }
-
-  for (i = 0;i < p;++i) h[i] = fg[i];
+  ntt761(h, f, g);
 }
 
 #ifndef LPR
@@ -231,14 +211,14 @@ static void Rq_mult_small(Fq *h,const Fq *f,const small *g)
 static void Rq_mult3(Fq *h,const Fq *f)
 {
   int i;
-  
+
   for (i = 0;i < p;++i) h[i] = Fq_freeze(3*f[i]);
 }
 
 /* out = 1/(3*in) in Rq */
 /* returns 0 if recip succeeded; else -1 */
 static int Rq_recip3(Fq *out,const small *in)
-{ 
+{
   Fq f[p+1],g[p+1],v[p+1],r[p+1];
   int i,loop,delta;
   int swap,t;
@@ -367,7 +347,7 @@ static void KeyGen(Fq *h,small *f,small *ginv)
 {
   small g[p];
   Fq finv[p];
-  
+
   for (;;) {
     Small_random(g);
     if (R3_recip(ginv,g) == 0) break;
@@ -405,7 +385,7 @@ static void Decrypt(small *r,const Fq *c,const small *f,const small *ginv)
   for (i = 0;i < w;++i) r[i] = ((ev[i]^1)&~mask)^1;
   for (i = w;i < p;++i) r[i] = ev[i]&~mask;
 }
-  
+
 #endif
 
 /* ----- NTRU LPRime Core */
@@ -445,7 +425,7 @@ static void Decrypt(int8 *r,const Fq *B,const int8 *T,const small *a)
   for (i = 0;i < I;++i)
     r[i] = -int16_negative_mask(Fq_freeze(Right(T[i])-aB[i]+4*w+1));
 }
-    
+
 #endif
 
 /* ----- encoding I-bit inputs */
@@ -526,7 +506,7 @@ static void HashShort(small *out,const Inputs r)
 }
 
 #endif
-  
+
 /* ----- NTRU LPRime Expand */
 
 #ifdef LPR
@@ -602,7 +582,7 @@ static void Rq_encode(unsigned char *s,const Fq *r)
 {
   uint16 R[p],M[p];
   int i;
-  
+
   for (i = 0;i < p;++i) R[i] = r[i]+q12;
   for (i = 0;i < p;++i) M[i] = q;
   Encode(s,R,M,p);
@@ -617,7 +597,7 @@ static void Rq_decode(Fq *r,const unsigned char *s)
   Decode(R,s,M,p);
   for (i = 0;i < p;++i) r[i] = ((Fq)R[i])-q12;
 }
-  
+
 #endif
 
 /* ----- encoding rounded polynomials */
@@ -832,7 +812,7 @@ static void KEM_KeyGen(unsigned char *pk,unsigned char *sk)
 static void Hide(unsigned char *c,unsigned char *r_enc,const Inputs r,const unsigned char *pk,const unsigned char *cache)
 {
   Inputs_encode(r_enc,r);
-#ifdef KAT
+#ifndef KAT
   {
     int j;
     printf("Hide r_enc: ");
