@@ -1,3 +1,8 @@
+# Prerequisites
+
+We need to ensure that the OpenSSL development package has been installed. To do
+this on the Raspberry Pi 4 execute `sudo apt install libssl-dev`.
+
 # Reference implementation
 
 The following are the benchmarks for the performance of the reference
