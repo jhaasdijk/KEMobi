@@ -35,7 +35,7 @@ __asm_ntt_inverse:
 
     /* Alias registers for a specific purpose (and readability) */
 
-    temp    .req w13
+    fact    .req w13
     start   .req x14    // Store pointer to the first integer coefficient
     M       .req w15    // Store the constant value M = 6984193
 
@@ -44,6 +44,32 @@ __asm_ntt_inverse:
     mov     M, #0x9201              // 6984193 (= M)
     movk    M, #0x6a, lsl #16
     mov     v28.4s[3], M
+
+    /* Multiplication with the accumulated factor -N */
+
+    mov     start, x0
+
+    // 512^-1 mod 6984193     = 6970552
+    // B  = 6970552 · R mod M = 4194304
+    // B' = B · M' mod R      = 4194304
+    // Move wide with zero, 4194304 = 0x400000
+
+    movz    fact, #0x40, lsl #16
+    mov     v28.4s[2], fact
+
+    .rept 128
+
+    ldr     q0, [start]
+
+    sqdmulh v30.4s, v0.4s, v28.4s[2]
+    mul     v31.4s, v0.4s, v28.4s[2]
+    sqdmulh v31.4s, v31.4s, v28.4s[3]
+    sub     v0.4s, v30.4s, v31.4s
+
+    str     q0, [start]
+    add     start, start, #16
+
+    .endr
 
     /* Layers 9+8 */
     /* NTT inverse layer 9: length = 1, ridx = 0 */
@@ -352,32 +378,6 @@ __asm_ntt_inverse:
     str     q23, [start, #4 * 480]
 
     add     start, start, #16       // Move to the next chunk
-
-    .endr
-
-    /* Multiply the result with the accumulated factor to complete the NTT */
-
-    mov     start, x0
-
-    // 512^-1 mod 6984193     = 6970552
-    // B  = 6970552 · R mod M = 4194304
-    // B' = B · M' mod R      = 4194304
-    // Move wide with zero, 4194304 = 0x400000
-
-    movz    temp, #0x40, lsl #16
-    mov     v28.4s[2], temp
-
-    .rept 128
-
-    ldr     q0, [start]
-
-    sqdmulh v30.4s, v0.4s, v28.4s[2]
-    mul     v31.4s, v0.4s, v28.4s[2]
-    sqdmulh v31.4s, v31.4s, v28.4s[3]
-    sub     v0.4s, v30.4s, v31.4s
-
-    str     q0, [start]
-    add     start, start, #16
 
     .endr
 
