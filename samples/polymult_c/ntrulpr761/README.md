@@ -57,10 +57,10 @@ optimizations are:
 
 | Fragment             | Cycles         |
 | --------             | ------         |
-| NTT forward          | med: 4799      |
-| Product              | med: 6484      |
-| NTT inverse          | med: 4645      |
-| Complete             | med: 29044     |
+| NTT forward          | med: 4299      |
+| Product              | med: 6454      |
+| NTT inverse          | med: 4189      |
+| Complete             | med: 27616     |
 
 <br>
 
@@ -68,16 +68,16 @@ optimizations are:
 
 | Fragment             | Cycles         |
 | --------             | ------         |
-| Zero padding         | med: 787       |
+| Zero padding         | med: 878       |
 | Good's forward       | med: 5660      |
-| NTT forward          | med: 4799      |
-| Product              | med: 87244     |
-| NTT inverse          | med: 4645      |
+| NTT forward          | med: 4307      |
+| Product              | med: 85863     |
+| NTT inverse          | med: 4189      |
 | Good's inverse       | med: 5661      |
 | Zx % (x^761 - x - 1) | med: 3125      |
 | Zx % 6984193         | med: 4588      |
 | Zx % 4591            | med: 4588      |
-| Complete             | med: 248712    |
+| Complete             | med: 242369    |
 
 More extensive and accurate benchmarking of the cost has been achieved by
 warming up the cache and ensuring that it contains valid data. During
