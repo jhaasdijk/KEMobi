@@ -9,6 +9,11 @@
 
 /* Provide macro definitions */
 
+.macro sub_add lower, upper_in, upper_out
+    sub \upper_out, \lower, \upper_in
+    add \lower, \lower, \upper_in
+.endm
+
 .macro butterfly lower, upper, twid1, twid2, t1, t2
     /* _asimd_sub_add */
     sub     \t1, \lower, \upper
@@ -21,21 +26,86 @@
     sub     \upper, \t2, \t1
 .endm
 
-.macro sub_add lower, upper, t1
-    mov \t1[0], \upper[0]
-    mov \t1[1], \upper[1]
-    mov \t1[2], \upper[2]
-    mov \t1[3], \upper[3]
+.macro doub_butterfly l0, l1, u0, u1, tw0, tw1, tw2, tw3, t0, t1, t2, t3
+    sub     \t0, \l0, \u0
+    add     \l0, \l0, \u0
 
-    sub \upper, \lower, \t1
-    add \lower, \lower, \t1
+    sqdmulh \t1, \t0, \tw0
+    sub     \t2, \l1, \u1
+    mul     \t0, \t0, \tw1
+    add     \l1, \l1, \u1
+    sqdmulh \t0, \t0, v28.4s[3]
+    sub     \u0, \t1, \t0
+
+    sqdmulh \t3, \t2, \tw2
+    mul     \t2, \t2, \tw3
+    sqdmulh \t2, \t2, v28.4s[3]
+    sub     \u1, \t3, \t2
+.endm
+
+.macro trip_butterfly l0, l1, l2, u0, u1, u2, tw0, tw1, tw2, tw3, tw4, tw5, t0, t1, t2, t3, t4, t5
+    sub     \t0, \l0, \u0
+    add     \l0, \l0, \u0
+
+    sqdmulh \t1, \t0, \tw0
+    sub     \t2, \l1, \u1
+    mul     \t0, \t0, \tw1
+    add     \l1, \l1, \u1
+    sqdmulh \t0, \t0, v28.4s[3]
+    sub     \u0, \t1, \t0
+
+    sqdmulh \t3, \t2, \tw2
+    sub     \t4, \l2, \u2
+    mul     \t2, \t2, \tw3
+    add     \l2, \l2, \u2
+    sqdmulh \t2, \t2, v28.4s[3]
+    sub     \u1, \t3, \t2
+
+    sqdmulh \t5, \t4, \tw4
+    mul     \t4, \t4, \tw5
+    sqdmulh \t4, \t4, v28.4s[3]
+    sub     \u2, \t5, \t4
+.endm
+
+.macro quad_butterfly l0, l1, l2, l3, u0, u1, u2, u3, tw0, tw1, tw2, tw3, tw4, tw5, tw6, tw7, t0, t1, t2, t3, t4, t5, t6, t7
+    sub     \t0, \l0, \u0
+    add     \l0, \l0, \u0
+
+    sqdmulh \t1, \t0, \tw0
+    sub     \t2, \l1, \u1
+    mul     \t0, \t0, \tw1
+    add     \l1, \l1, \u1
+    sqdmulh \t0, \t0, v28.4s[3]
+    sub     \u0, \t1, \t0
+
+    sqdmulh \t3, \t2, \tw2
+    sub     \t4, \l2, \u2
+    mul     \t2, \t2, \tw3
+    add     \l2, \l2, \u2
+    sqdmulh \t2, \t2, v28.4s[3]
+    sub     \u1, \t3, \t2
+
+    sqdmulh \t5, \t4, \tw4
+    sub     \t6, \l3, \u3
+    mul     \t4, \t4, \tw5
+    add     \l3, \l3, \u3
+    sqdmulh \t4, \t4, v28.4s[3]
+    sub     \u2, \t5, \t4
+
+    sqdmulh \t7, \t6, \tw6
+    mul     \t6, \t6, \tw7
+    sqdmulh \t6, \t6, v28.4s[3]
+    sub     \u3, \t7, \t6
 .endm
 
 __asm_ntt_inverse:
 
+    sub sp, sp, #64
+    st1 { v8.2s,  v9.2s, v10.2s, v11.2s}, [sp], #32
+    st1 {v12.2s, v13.2s, v14.2s, v15.2s}, [sp], #32
+
     /* Alias registers for a specific purpose (and readability) */
 
-    fact    .req w13
     start   .req x14    // Store pointer to the first integer coefficient
     M       .req w15    // Store the constant value M = 6984193
 
@@ -44,32 +114,6 @@ __asm_ntt_inverse:
     mov     M, #0x9201              // 6984193 (= M)
     movk    M, #0x6a, lsl #16
     mov     v28.4s[3], M
-
-    /* Multiplication with the accumulated factor -N */
-
-    mov     start, x0
-
-    // 512^-1 mod 6984193     = 6970552
-    // B  = 6970552 · R mod M = 4194304
-    // B' = B · M' mod R      = 4194304
-    // Move wide with zero, 4194304 = 0x400000
-
-    movz    fact, #0x40, lsl #16
-    mov     v28.4s[2], fact
-
-    .rept 128
-
-    ldr     q0, [start]
-
-    sqdmulh v30.4s, v0.4s, v28.4s[2]
-    mul     v31.4s, v0.4s, v28.4s[2]
-    sqdmulh v31.4s, v31.4s, v28.4s[3]
-    sub     v0.4s, v30.4s, v31.4s
-
-    str     q0, [start]
-    add     start, start, #16
-
-    .endr
 
     /* Layers 9+8 */
     /* NTT inverse layer 9: length = 1, ridx = 0 */
@@ -114,19 +158,18 @@ __asm_ntt_inverse:
     ld2 {v25.s, v26.s}[2], [x4], #8
     ld2 {v25.s, v26.s}[3], [x4], #8
 
-    butterfly v0.4s, v1.4s, v23.4s, v25.4s, v30.4s, v31.4s
-    butterfly v2.4s, v3.4s, v24.4s, v26.4s, v30.4s, v31.4s
+    doub_butterfly v0.4s, v2.4s, v1.4s, v3.4s, v23.4s, v25.4s, v24.4s, v26.4s, v4.4s, v5.4s, v6.4s, v7.4s
 
     // LAYER 8
     // length = 2, we need 4 roots. We are going to execute:
     // [0, 1, 4, 5]   * [2, 3, 6, 7]     = V0 * V2
     // [8, 9, 12, 13] * [10, 11, 14, 15] = V1 * V3
 
-    ldr q23, [x5], #16
-    ldr q24, [x6], #16
+    ldr q30, [x5], #16
+    ldr q31, [x6], #16
 
-    butterfly v0.4s, v2.4s, v23.4s, v24.4s, v30.4s, v31.4s
-    butterfly v1.4s, v3.4s, v23.4s, v24.4s, v30.4s, v31.4s
+    butterfly v0.4s, v2.4s, v30.4s, v31.4s, v8.4s, v10.4s
+    butterfly v1.4s, v3.4s, v30.4s, v31.4s, v9.4s, v11.4s
 
     st4 {v0.s, v1.s, v2.s, v3.s}[0], [start_s], #16
     st4 {v0.s, v1.s, v2.s, v3.s}[1], [start_s], #16
@@ -168,39 +211,50 @@ __asm_ntt_inverse:
     // (multiplying by 1 is useless) and only need to perform the sub, add
     // operations.
 
-    sub_add v0.4s, v1.4s, v31.4s
+    sub_add v0.4s, v1.4s, v8.4s
 
-    ldr     q24, [x3], #16
-    ldr     q25, [x4], #16
-    butterfly v2.4s, v3.4s, v24.4s[1], v25.4s[1], v30.4s, v31.4s
-    butterfly v4.4s, v5.4s, v24.4s[2], v25.4s[2], v30.4s, v31.4s
-    butterfly v6.4s, v7.4s, v24.4s[3], v25.4s[3], v30.4s, v31.4s
+    // So now the order is:
+    // 0, 8, 2, 3
+    // 4, 5, 6, 7
+
+    ldr     q27, [x3], #16
+    ldr     q29, [x4], #16
+
+    trip_butterfly v2.4s, v4.4s, v6.4s, v3.4s, v5.4s, v7.4s, v27.4s[1], v29.4s[1], v27.4s[2], v29.4s[2], v27.4s[3], v29.4s[3], v15.4s, v16.4s, v17.4s, v18.4s, v19.4s, v20.4s
 
     // LAYER 6
 
-    sub_add v0.4s, v2.4s, v31.4s
-    sub_add v1.4s, v3.4s, v31.4s
+    sub_add v0.4s, v2.4s, v9.4s
+    sub_add v8.4s, v3.4s, v10.4s
 
-    ld1     {v28.s}[0], [x5], #4
-    ld1     {v28.s}[1], [x6], #4
-    butterfly v4.4s, v6.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
-    butterfly v5.4s, v7.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    // So now the order is:
+    // 0, 8, 9, 10
+    // 4, 5, 6, 7
+
+    ldr q30, [x5], #4
+    ldr q31, [x6], #4
+
+    doub_butterfly v4.4s, v5.4s, v6.4s, v7.4s, v30.4s[0], v31.4s[0], v30.4s[0], v31.4s[0], v21.4s, v22.4s, v23.4s, v24.4s
 
     // LAYER 5
 
-    sub_add v0.4s, v4.4s, v31.4s
-    sub_add v1.4s, v5.4s, v31.4s
-    sub_add v2.4s, v6.4s, v31.4s
-    sub_add v3.4s, v7.4s, v31.4s
+    sub_add v0.4s, v4.4s, v11.4s
+    sub_add v8.4s, v5.4s, v12.4s
+    sub_add v9.4s, v6.4s, v13.4s
+    sub_add v10.4s, v7.4s, v14.4s
+
+    // So now the order is:
+    // 0, 8, 9, 10
+    // 11, 12, 13, 14
 
     str     q0, [start, #4 * 0]
-    str     q1, [start, #4 * 4]
-    str     q2, [start, #4 * 8]
-    str     q3, [start, #4 * 12]
-    str     q4, [start, #4 * 16]
-    str     q5, [start, #4 * 20]
-    str     q6, [start, #4 * 24]
-    str     q7, [start, #4 * 28]
+    str     q8, [start, #4 * 4]
+    str     q9, [start, #4 * 8]
+    str     q10, [start, #4 * 12]
+    str     q11, [start, #4 * 16]
+    str     q12, [start, #4 * 20]
+    str     q13, [start, #4 * 24]
+    str     q14, [start, #4 * 28]
 
     add     start, start, #4 * 32   // Update pointer to next first coefficient
 
@@ -215,35 +269,20 @@ __asm_ntt_inverse:
     ldr     q6, [start, #4 * 24]
     ldr     q7, [start, #4 * 28]
 
-    // LAYER 7
-
     ldr     q24, [x3], #16
     ldr     q25, [x4], #16
-    butterfly v0.4s, v1.4s, v24.4s[0], v25.4s[0], v30.4s, v31.4s
-    butterfly v2.4s, v3.4s, v24.4s[1], v25.4s[1], v30.4s, v31.4s
-    butterfly v4.4s, v5.4s, v24.4s[2], v25.4s[2], v30.4s, v31.4s
-    butterfly v6.4s, v7.4s, v24.4s[3], v25.4s[3], v30.4s, v31.4s
 
-    // LAYER 6
+    quad_butterfly v0.4s, v2.4s, v4.4s, v6.4s, v1.4s, v3.4s, v5.4s, v7.4s, v24.4s[0], v25.4s[0], v24.4s[1], v25.4s[1], v24.4s[2], v25.4s[2], v24.4s[3], v25.4s[3], v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
 
-    ld1     {v28.s}[0], [x5], #4
-    ld1     {v28.s}[1], [x6], #4
-    butterfly v0.4s, v2.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
-    butterfly v1.4s, v3.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    ldr q26, [x5], #8
+    ldr q27, [x6], #8
 
-    ld1     {v28.s}[0], [x5], #4
-    ld1     {v28.s}[1], [x6], #4
-    butterfly v4.4s, v6.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
-    butterfly v5.4s, v7.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    quad_butterfly v0.4s, v1.4s, v4.4s, v5.4s, v2.4s, v3.4s, v6.4s, v7.4s, v26.4s[0], v27.4s[0], v26.4s[0], v27.4s[0], v26.4s[1], v27.4s[1], v26.4s[1], v27.4s[1], v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
 
-    // LAYER 5
+    ldr q30, [x7], #4
+    ldr q31, [x9], #4
 
-    ld1     {v28.s}[0], [x7], #4
-    ld1     {v28.s}[1], [x9], #4
-    butterfly v0.4s, v4.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
-    butterfly v1.4s, v5.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
-    butterfly v2.4s, v6.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
-    butterfly v3.4s, v7.4s, v28.4s[0], v28.4s[1], v30.4s, v31.4s
+    quad_butterfly v0.4s, v1.4s, v2.4s, v3.4s, v4.4s, v5.4s, v6.4s, v7.4s, v30.4s[0], v31.4s[0], v30.4s[0], v31.4s[0], v30.4s[0], v31.4s[0], v30.4s[0], v31.4s[0], v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s
 
     str     q0, [start, #4 * 0]
     str     q1, [start, #4 * 4]
@@ -312,73 +351,90 @@ __asm_ntt_inverse:
     // sub, add operations. This means that we can skip multiplying with root
     // v24.4s[0].
 
-    sub_add v0.4s, v1.4s, v31.4s
+    sub_add v0.4s, v1.4s, v8.4s
 
-    butterfly v2.4s, v3.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
-    butterfly v4.4s, v5.4s, v24.4s[2], v26.4s[2], v30.4s, v31.4s
-    butterfly v6.4s, v7.4s, v24.4s[3], v26.4s[3], v30.4s, v31.4s
-    butterfly v16.4s, v17.4s, v25.4s[0], v27.4s[0], v30.4s, v31.4s
-    butterfly v18.4s, v19.4s, v25.4s[1], v27.4s[1], v30.4s, v31.4s
-    butterfly v20.4s, v21.4s, v25.4s[2], v27.4s[2], v30.4s, v31.4s
-    butterfly v22.4s, v23.4s, v25.4s[3], v27.4s[3], v30.4s, v31.4s
+    // So now the order is:
+    // 0, 8, 2, 3
+    // 4, 5, 6, 7
+    // 16, 17, 18, 19
+    // 20, 21, 22, 23
+
+    trip_butterfly v2.4s, v4.4s, v6.4s, v3.4s, v5.4s, v7.4s, v24.4s[1], v26.4s[1], v24.4s[2], v26.4s[2], v24.4s[3], v26.4s[3], v9.4s, v10.4s, v11.4s, v12.4s, v13.4s, v14.4s
+    quad_butterfly v16.4s, v18.4s, v20.4s, v22.4s, v17.4s, v19.4s, v21.4s, v23.4s, v25.4s[0], v27.4s[0], v25.4s[1], v27.4s[1], v25.4s[2], v27.4s[2], v25.4s[3], v27.4s[3], v15.4s, v29.4s, v30.4s, v31.4s, v11.4s, v12.4s, v13.4s, v14.4s
 
     // LAYER 3
 
-    sub_add v0.4s, v2.4s, v31.4s
-    sub_add v1.4s, v3.4s, v31.4s
+    sub_add v0.4s, v2.4s, v9.4s
+    sub_add v8.4s, v3.4s, v10.4s
 
-    butterfly v4.4s, v6.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
-    butterfly v5.4s, v7.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
-    butterfly v16.4s, v18.4s, v24.4s[2], v26.4s[2], v30.4s, v31.4s
-    butterfly v17.4s, v19.4s, v24.4s[2], v26.4s[2], v30.4s, v31.4s
-    butterfly v20.4s, v22.4s, v24.4s[3], v26.4s[3], v30.4s, v31.4s
-    butterfly v21.4s, v23.4s, v24.4s[3], v26.4s[3], v30.4s, v31.4s
+    // So now the order is:
+    // 0, 8, 9, 10
+    // 4, 5, 6, 7
+    // 16, 17, 18, 19
+    // 20, 21, 22, 23
+
+    doub_butterfly v4.4s, v5.4s, v6.4s, v7.4s, v24.4s[1], v26.4s[1], v24.4s[1], v26.4s[1], v1.4s, v2.4s, v3.4s, v11.4s
+    quad_butterfly v16.4s, v17.4s, v20.4s, v21.4s, v18.4s, v19.4s, v22.4s, v23.4s, v24.4s[2], v26.4s[2], v24.4s[2], v26.4s[2], v24.4s[3], v26.4s[3], v24.4s[3], v26.4s[3], v12.4s, v13.4s, v14.4s, v15.4s, v29.4s, v30.4s, v31.4s, v1.4s
 
     // LAYER 2
 
-    sub_add v0.4s, v4.4s, v31.4s
-    sub_add v1.4s, v5.4s, v31.4s
-    sub_add v2.4s, v6.4s, v31.4s
-    sub_add v3.4s, v7.4s, v31.4s
+    sub_add v0.4s, v4.4s, v11.4s
+    sub_add v8.4s, v5.4s, v12.4s
+    sub_add v9.4s, v6.4s, v13.4s
+    sub_add v10.4s, v7.4s, v14.4s
 
-    butterfly v16.4s, v20.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
-    butterfly v17.4s, v21.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
-    butterfly v18.4s, v22.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
-    butterfly v19.4s, v23.4s, v24.4s[1], v26.4s[1], v30.4s, v31.4s
+    // So now the order is:
+    // 0, 8, 9, 10
+    // 11, 12, 13, 14
+    // 16, 17, 18, 19
+    // 20, 21, 22, 23
+
+    quad_butterfly v16.4s, v17.4s, v18.4s, v19.4s, v20.4s, v21.4s, v22.4s, v23.4s, v24.4s[1], v26.4s[1], v24.4s[1], v26.4s[1], v24.4s[1], v26.4s[1], v24.4s[1], v26.4s[1], v2.4s, v3.4s, v4.4s, v5.4s, v6.4s, v7.4s, v15.4s, v29.4s
 
     // LAYER 1
 
-    sub_add v0.4s, v16.4s, v31.4s
-    sub_add v1.4s, v17.4s, v31.4s
-    sub_add v2.4s, v18.4s, v31.4s
-    sub_add v3.4s, v19.4s, v31.4s
-    sub_add v4.4s, v20.4s, v31.4s
-    sub_add v5.4s, v21.4s, v31.4s
-    sub_add v6.4s, v22.4s, v31.4s
-    sub_add v7.4s, v23.4s, v31.4s
+    sub_add v0.4s, v16.4s, v2.4s
+    sub_add v8.4s, v17.4s, v3.4s
+    sub_add v9.4s, v18.4s, v4.4s
+    sub_add v10.4s, v19.4s, v5.4s
+
+    sub_add v11.4s, v20.4s, v6.4s
+    sub_add v12.4s, v21.4s, v7.4s
+    sub_add v13.4s, v22.4s, v15.4s
+    sub_add v14.4s, v23.4s, v29.4s
+
+    // So now the order is:
+    // 0, 8, 9, 10
+    // 11, 12, 13, 14
+    // 2, 3, 4, 5
+    // 6, 7, 15, 29
 
     str     q0, [start, #4 * 0]
-    str     q1, [start, #4 * 32]
-    str     q2, [start, #4 * 64]
-    str     q3, [start, #4 * 96]
+    str     q8, [start, #4 * 32]
+    str     q9, [start, #4 * 64]
+    str     q10, [start, #4 * 96]
 
-    str     q4, [start, #4 * 128]
-    str     q5, [start, #4 * 160]
-    str     q6, [start, #4 * 192]
-    str     q7, [start, #4 * 224]
+    str     q11, [start, #4 * 128]
+    str     q12, [start, #4 * 160]
+    str     q13, [start, #4 * 192]
+    str     q14, [start, #4 * 224]
 
-    str     q16, [start, #4 * 256]
-    str     q17, [start, #4 * 288]
-    str     q18, [start, #4 * 320]
-    str     q19, [start, #4 * 352]
+    str     q2, [start, #4 * 256]
+    str     q3, [start, #4 * 288]
+    str     q4, [start, #4 * 320]
+    str     q5, [start, #4 * 352]
 
-    str     q20, [start, #4 * 384]
-    str     q21, [start, #4 * 416]
-    str     q22, [start, #4 * 448]
-    str     q23, [start, #4 * 480]
+    str     q6, [start, #4 * 384]
+    str     q7, [start, #4 * 416]
+    str     q15, [start, #4 * 448]
+    str     q29, [start, #4 * 480]
 
     add     start, start, #16       // Move to the next chunk
 
     .endr
+
+    sub sp, sp, #64
+    ld1 { v8.2s,  v9.2s, v10.2s, v11.2s}, [sp], #32
+    ld1 {v12.2s, v13.2s, v14.2s, v15.2s}, [sp], #32
 
     ret     lr

@@ -22,6 +22,7 @@ void ntt512(int32_t *fg, int32_t *f, int32_t *g)
     }
 
     /* Compute the iterative inplace inverse NTT */
+    __asm_reduce_multiply(fg);
     __asm_ntt_inverse(fg, MR_inv_top, MR_inv_bot);
 
     __asm_reduce_coefficients(fg);

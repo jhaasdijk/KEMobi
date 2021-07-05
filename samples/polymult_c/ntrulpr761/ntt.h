@@ -65,5 +65,6 @@ extern void __asm_ntt_inverse(int32_t *coefficients, int32_t *MR_inv_top, int32_
  * @param[in, out] coefficients An array of integer coefficients (i.e. a polynomial)
  */
 extern void __asm_reduce_coefficients(int32_t *coefficients);
+extern void __asm_reduce_multiply(int32_t *coefficients);
 
 #endif
