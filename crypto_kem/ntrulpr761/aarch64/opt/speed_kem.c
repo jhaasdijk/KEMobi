@@ -303,7 +303,19 @@ void Short_random(small *out)
   uint32 L[p];
   int i;
 
-  for (i = 0;i < p;++i) L[i] = urandom32();
+  unsigned char c[4*p];
+  randombytes(c,4*p);
+  uint32 buf[4];
+
+  for (i = 0;i < p;++i)
+  {
+    buf[0] = (uint32)c[i*4 + 0];
+    buf[1] = ((uint32)c[i*4 + 1])<<8;
+    buf[2] = ((uint32)c[i*4 + 2])<<16;
+    buf[3] = ((uint32)c[i*4 + 3])<<24;
+    out[i] = buf[0]+buf[1]+buf[2]+buf[3];
+  }
+
   Short_fromlist(out,L);
 }
 

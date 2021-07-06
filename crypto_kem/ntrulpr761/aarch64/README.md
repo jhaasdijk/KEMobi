@@ -43,33 +43,33 @@ implementation. They have been executed with `#define NTESTS 100`.
 
 ```shell
 |------------------------------------------|--------------------|
-| crypto_kem_keypair(pk, sk)               | med: 7761657       |
+| crypto_kem_keypair(pk, sk)               | med: 1071218       |
 |------------------------------------------|--------------------|
-| Seeds_random()                           | med: 11659         |
-| Generator()                              | med: 70710         |
-| Short_random()                           | med: 7324281       |
-| Rq_mult_small()                          | med: 241769        |
+| Seeds_random()                           | med: 11714         |
+| Generator()                              | med: 71317         |
+| Short_random()                           | med: 639160        |
+| Rq_mult_small()                          | med: 238743        |
 | Round()                                  | med: 42034         |
-| Rounded_encode()                         | med: 14857         |
+| Rounded_encode()                         | med: 14806         |
 | Small_encode()                           | med: 620           |
-| randombytes()                            | med: 11713         |
-| Hash_prefix()                            | med: 8746          |
+| randombytes()                            | med: 11670         |
+| Hash_prefix()                            | med: 8753          |
 |------------------------------------------|--------------------|
-| crypto_kem_enc(ct, ss, pk)               | med: 996576        |
+| crypto_kem_enc(ct, ss, pk)               | med: 987916        |
 |------------------------------------------|--------------------|
-| Hash_prefix()                            | med: 8746          |
-| Inputs_random()                          | med: 12481         |
-| Hide()                                   | med: 956928        |
-| HashSession()                            | med: 9889          |
+| Hash_prefix()                            | med: 8750          |
+| Inputs_random()                          | med: 12521         |
+| Hide()                                   | med: 938159        |
+| HashSession()                            | med: 9842          |
 |------------------------------------------|--------------------|
-| crypto_kem_dec(ss1, ct, sk)              | med: 1299607       |
+| crypto_kem_dec(ss1, ct, sk)              | med: 1277141       |
 |------------------------------------------|--------------------|
-| Decrypt()                                | med: 271826        |
-| Hide()                                   | med: 957394        |
+| Decrypt()                                | med: 259934        |
+| Hide()                                   | med: 937444        |
 |------------------------------------------|--------------------|
 |- Short_random() -------------------------|--------------------|
-| urandom32()               ( x 761 )      | med: 9332          |
-| Short_fromlist()          ( x 1   )      | med: 187470        |
+| urandom32()               ( x 761 )      | med: 9420          |
+| Short_fromlist()          ( x 1   )      | med: 187392        |
 |------------------------------------------|--------------------|
 ```
 
@@ -83,4 +83,4 @@ comparison between `Rq_mult_small()`.
 
 **In total** this means that the performance cost for the key generation,
 encapsulation and decapsulation of the reference implementation is reduced by
-79.32%, 98.36% and 98.57% respectively in the optimized implementation.
+97.15%, 98.37% and 98.60% respectively in our optimized implementation.
