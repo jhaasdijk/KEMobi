@@ -73,8 +73,6 @@ implementation. They have been executed with `#define NTESTS 100`.
 |------------------------------------------|--------------------|
 ```
 
-TODO ionclude new benchmarks
-
 Note that all depicted cycle counts are the median for a single execution of the
 concerning function. The `( x 761 )` and `( x 1   )` notation is merely used to
 illustrate how many times these routines are used within `Short_random()`.
