@@ -104,7 +104,7 @@ void ntt761(int16_t *fg, int16_t *f, int8_t *g)
 
     for (size_t idx = 0; idx < GP0; idx++)
     {
-        __asm_reduce_coefficients(C_mat[idx]);
+        __asm_reduce_multiply(C_mat[idx]);
         __asm_ntt_inverse(C_mat[idx], MR_inv_top, MR_inv_bot);
         __asm_reduce_coefficients(C_mat[idx]);
     }
