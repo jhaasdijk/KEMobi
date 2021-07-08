@@ -77,10 +77,6 @@ Note that all depicted cycle counts are the median for a single execution of the
 concerning function. The `( x 761 )` and `( x 1   )` notation is merely used to
 illustrate how many times these routines are used within `Short_random()`.
 
-Currently the only difference compared to the reference implementation is the
-use of NTT based polynomial multiplication. This is most notable in the cost
-comparison between `Rq_mult_small()`.
-
 **In total** this means that the performance cost for the key generation,
 encapsulation and decapsulation of the reference implementation is reduced by
 97.21%, 98.44% and 98.66% respectively in our optimized implementation.
