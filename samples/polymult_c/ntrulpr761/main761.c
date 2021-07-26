@@ -326,6 +326,14 @@ void test_ntt_mod(char *preface)
         for (size_t idx = 0; idx < NTRU_P; idx++)
         {
             poly_one[idx] = modulo(poly_one[idx], NTT_Q);
+            if (poly_one[idx] > NTT_Q / 2)
+            {
+                poly_one[idx] = poly_one[idx] - NTT_Q;
+            }
+            if (poly_one[idx] < -NTT_Q / 2)
+            {
+                poly_one[idx] = poly_one[idx] + NTT_Q;
+            }
         }
     }
 
@@ -343,6 +351,17 @@ void test_mod(char *preface)
         for (size_t idx = 0; idx < NTRU_P; idx++)
         {
             poly_one[idx] = modulo(poly_one[idx], NTRU_Q);
+
+            /* Weigh the coefficients in { - (q-1)/2, ..., (q-1)/2  */
+
+            if (poly_one[idx] > NTRU_Q / 2)
+            {
+                poly_one[idx] = poly_one[idx] - NTRU_Q;
+            }
+            if (poly_one[idx] < -NTRU_Q / 2)
+            {
+                poly_one[idx] = poly_one[idx] + NTRU_Q;
+            }
         }
     }
 

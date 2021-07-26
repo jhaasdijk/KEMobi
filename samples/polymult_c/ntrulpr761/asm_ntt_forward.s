@@ -47,11 +47,6 @@ __asm_ntt_forward:
 
     mov     start, x0               // Store *coefficients[0]
 
-    /* Store layer specific values  */
-
-    add     x3, x1, #4 * 7          // Store *B[7]
-    add     x4, x2, #4 * 7          // Store *B'[7]
-
     /* Preload the required root values, we have enough room */
     /* This works because there are actually only 16 different values */
     /* [7] == [3] == [1] == [0] */
@@ -59,47 +54,42 @@ __asm_ntt_forward:
     /* [9] == [5] */
     /* [10] == [6] */
 
-    ldr     q24, [x3], #4 * 4       // B[7, 8, 9, 10]
-    ldr     q25, [x3], #4 * 4       // B[11, 12, 13, 14]
-    ldr     q26, [x4], #4 * 4       // B'[7, 8, 9, 10]
-    ldr     q27, [x4], #4 * 4       // B'[11, 12, 13, 14]
+    ldr     q24, [x1, #4 * 7]       // B[7, 8, 9, 10]
+    ldr     q25, [x1, #4 * 11]      // B[11, 12, 13, 14]
+    ldr     q26, [x2, #4 * 7]       // B'[7, 8, 9, 10]
+    ldr     q27, [x2, #4 * 11]      // B'[11, 12, 13, 14]
 
     /* Repeat this sequence 8 times. We need to perform the calculation for
      * every integer coefficient. We have intervals of 32 values and we can take
      * 4 values in one go. 32 / 4 = 8. */
 
-    // <START> LAYER 1234 .rept </START>
-
     ldr     q0, [start, #4 * 0]
-    ldr     q1, [start, #4 * 32]
-    ldr     q2, [start, #4 * 64]
-    ldr     q3, [start, #4 * 96]
     ldr     q16, [start, #4 * 256]
+    ldr     q1, [start, #4 * 32]
     ldr     q17, [start, #4 * 288]
+    ldr     q2, [start, #4 * 64]
     ldr     q18, [start, #4 * 320]
+    ldr     q3, [start, #4 * 96]
     ldr     q19, [start, #4 * 352]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 128]
-    ldr     q5, [start, #4 * 160]
-    ldr     q6, [start, #4 * 192]
-    ldr     q7, [start, #4 * 224]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 384]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 160]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 416]
-    ldr     q22, [start, #4 * 448]
-    ldr     q23, [start, #4 * 480]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 192]
 
+    ldr     q22, [start, #4 * 448]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 224]
+    ldr     q23, [start, #4 * 480]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -108,12 +98,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -150,12 +134,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -197,18 +175,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 0]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 32]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -220,9 +194,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 64]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 96]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -230,79 +206,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 128]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 160]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 192]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 0]
-    str     q20, [start, #4 * 32]
-    str     q4, [start, #4 * 64]
-    str     q5, [start, #4 * 96]
-
-    str     q16, [start, #4 * 128]
-    str     q17, [start, #4 * 160]
-    str     q18, [start, #4 * 192]
     str     q19, [start, #4 * 224]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 256]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 288]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 256]
-    str     q9, [start, #4 * 288]
     str     q10, [start, #4 * 320]
     str     q11, [start, #4 * 352]
-
-    str     q12, [start, #4 * 384]
-    str     q13, [start, #4 * 416]
-    str     q14, [start, #4 * 448]
-    str     q15, [start, #4 * 480]
+    add     v14.4s, v14.4s, v2.4s
 
     ldr     q0, [start, #4 * 4]
-    ldr     q1, [start, #4 * 36]
-    ldr     q2, [start, #4 * 68]
-    ldr     q3, [start, #4 * 100]
+    str     q12, [start, #4 * 384]
     ldr     q16, [start, #4 * 260]
+    str     q13, [start, #4 * 416]
+    ldr     q1, [start, #4 * 36]
+    str     q15, [start, #4 * 480]
     ldr     q17, [start, #4 * 292]
+    str     q14, [start, #4 * 448]
+
+    ldr     q2, [start, #4 * 68]
     ldr     q18, [start, #4 * 324]
+    ldr     q3, [start, #4 * 100]
     ldr     q19, [start, #4 * 356]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 132]
-    ldr     q5, [start, #4 * 164]
-    ldr     q6, [start, #4 * 196]
-    ldr     q7, [start, #4 * 228]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 388]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 164]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 420]
-    ldr     q22, [start, #4 * 452]
-    ldr     q23, [start, #4 * 484]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 196]
 
+    ldr     q22, [start, #4 * 452]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 228]
+    ldr     q23, [start, #4 * 484]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -311,12 +277,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -353,12 +313,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -400,18 +354,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 4]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 36]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -423,9 +373,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 68]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 100]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -433,79 +385,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 132]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 164]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 196]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 4]
-    str     q20, [start, #4 * 36]
-    str     q4, [start, #4 * 68]
-    str     q5, [start, #4 * 100]
-
-    str     q16, [start, #4 * 132]
-    str     q17, [start, #4 * 164]
-    str     q18, [start, #4 * 196]
     str     q19, [start, #4 * 228]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 260]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 292]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 260]
-    str     q9, [start, #4 * 292]
     str     q10, [start, #4 * 324]
     str     q11, [start, #4 * 356]
-
-    str     q12, [start, #4 * 388]
-    str     q13, [start, #4 * 420]
-    str     q14, [start, #4 * 452]
-    str     q15, [start, #4 * 484]
+    add     v14.4s, v14.4s, v2.4s
 
     ldr     q0, [start, #4 * 8]
-    ldr     q1, [start, #4 * 40]
-    ldr     q2, [start, #4 * 72]
-    ldr     q3, [start, #4 * 104]
+    str     q12, [start, #4 * 388]
     ldr     q16, [start, #4 * 264]
+    str     q13, [start, #4 * 420]
+    ldr     q1, [start, #4 * 40]
+    str     q15, [start, #4 * 484]
     ldr     q17, [start, #4 * 296]
+    str     q14, [start, #4 * 452]
+
+    ldr     q2, [start, #4 * 72]
     ldr     q18, [start, #4 * 328]
+    ldr     q3, [start, #4 * 104]
     ldr     q19, [start, #4 * 360]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 136]
-    ldr     q5, [start, #4 * 168]
-    ldr     q6, [start, #4 * 200]
-    ldr     q7, [start, #4 * 232]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 392]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 168]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 424]
-    ldr     q22, [start, #4 * 456]
-    ldr     q23, [start, #4 * 488]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 200]
 
+    ldr     q22, [start, #4 * 456]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 232]
+    ldr     q23, [start, #4 * 488]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -514,12 +456,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -556,12 +492,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -603,18 +533,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 8]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 40]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -626,9 +552,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 72]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 104]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -636,79 +564,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 136]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 168]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 200]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 8]
-    str     q20, [start, #4 * 40]
-    str     q4, [start, #4 * 72]
-    str     q5, [start, #4 * 104]
-
-    str     q16, [start, #4 * 136]
-    str     q17, [start, #4 * 168]
-    str     q18, [start, #4 * 200]
     str     q19, [start, #4 * 232]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 264]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 296]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 264]
-    str     q9, [start, #4 * 296]
     str     q10, [start, #4 * 328]
     str     q11, [start, #4 * 360]
-
-    str     q12, [start, #4 * 392]
-    str     q13, [start, #4 * 424]
-    str     q14, [start, #4 * 456]
-    str     q15, [start, #4 * 488]
+    add     v14.4s, v14.4s, v2.4s
 
     ldr     q0, [start, #4 * 12]
-    ldr     q1, [start, #4 * 44]
-    ldr     q2, [start, #4 * 76]
-    ldr     q3, [start, #4 * 108]
+    str     q12, [start, #4 * 392]
     ldr     q16, [start, #4 * 268]
+    str     q13, [start, #4 * 424]
+    ldr     q1, [start, #4 * 44]
+    str     q15, [start, #4 * 488]
     ldr     q17, [start, #4 * 300]
+    str     q14, [start, #4 * 456]
+
+    ldr     q2, [start, #4 * 76]
     ldr     q18, [start, #4 * 332]
+    ldr     q3, [start, #4 * 108]
     ldr     q19, [start, #4 * 364]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 140]
-    ldr     q5, [start, #4 * 172]
-    ldr     q6, [start, #4 * 204]
-    ldr     q7, [start, #4 * 236]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 396]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 172]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 428]
-    ldr     q22, [start, #4 * 460]
-    ldr     q23, [start, #4 * 492]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 204]
 
+    ldr     q22, [start, #4 * 460]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 236]
+    ldr     q23, [start, #4 * 492]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -717,12 +635,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -759,12 +671,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -806,18 +712,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 12]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 44]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -829,9 +731,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 76]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 108]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -839,79 +743,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 140]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 172]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 204]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 12]
-    str     q20, [start, #4 * 44]
-    str     q4, [start, #4 * 76]
-    str     q5, [start, #4 * 108]
-
-    str     q16, [start, #4 * 140]
-    str     q17, [start, #4 * 172]
-    str     q18, [start, #4 * 204]
     str     q19, [start, #4 * 236]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 268]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 300]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 268]
-    str     q9, [start, #4 * 300]
     str     q10, [start, #4 * 332]
     str     q11, [start, #4 * 364]
-
-    str     q12, [start, #4 * 396]
-    str     q13, [start, #4 * 428]
-    str     q14, [start, #4 * 460]
-    str     q15, [start, #4 * 492]
+    add     v14.4s, v14.4s, v2.4s
 
     ldr     q0, [start, #4 * 16]
-    ldr     q1, [start, #4 * 48]
-    ldr     q2, [start, #4 * 80]
-    ldr     q3, [start, #4 * 112]
+    str     q12, [start, #4 * 396]
     ldr     q16, [start, #4 * 272]
+    str     q13, [start, #4 * 428]
+    ldr     q1, [start, #4 * 48]
+    str     q15, [start, #4 * 492]
     ldr     q17, [start, #4 * 304]
+    str     q14, [start, #4 * 460]
+
+    ldr     q2, [start, #4 * 80]
     ldr     q18, [start, #4 * 336]
+    ldr     q3, [start, #4 * 112]
     ldr     q19, [start, #4 * 368]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 144]
-    ldr     q5, [start, #4 * 176]
-    ldr     q6, [start, #4 * 208]
-    ldr     q7, [start, #4 * 240]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 400]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 176]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 432]
-    ldr     q22, [start, #4 * 464]
-    ldr     q23, [start, #4 * 496]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 208]
 
+    ldr     q22, [start, #4 * 464]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 240]
+    ldr     q23, [start, #4 * 496]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -920,12 +814,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -962,12 +850,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -1009,18 +891,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 16]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 48]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -1032,9 +910,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 80]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 112]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -1042,79 +922,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 144]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 176]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 208]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 16]
-    str     q20, [start, #4 * 48]
-    str     q4, [start, #4 * 80]
-    str     q5, [start, #4 * 112]
-
-    str     q16, [start, #4 * 144]
-    str     q17, [start, #4 * 176]
-    str     q18, [start, #4 * 208]
     str     q19, [start, #4 * 240]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 272]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 304]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 272]
-    str     q9, [start, #4 * 304]
     str     q10, [start, #4 * 336]
     str     q11, [start, #4 * 368]
-
-    str     q12, [start, #4 * 400]
-    str     q13, [start, #4 * 432]
-    str     q14, [start, #4 * 464]
-    str     q15, [start, #4 * 496]
+    add     v14.4s, v14.4s, v2.4s
 
     ldr     q0, [start, #4 * 20]
-    ldr     q1, [start, #4 * 52]
-    ldr     q2, [start, #4 * 84]
-    ldr     q3, [start, #4 * 116]
+    str     q12, [start, #4 * 400]
     ldr     q16, [start, #4 * 276]
+    str     q13, [start, #4 * 432]
+    ldr     q1, [start, #4 * 52]
+    str     q15, [start, #4 * 496]
     ldr     q17, [start, #4 * 308]
+    str     q14, [start, #4 * 464]
+
+    ldr     q2, [start, #4 * 84]
     ldr     q18, [start, #4 * 340]
+    ldr     q3, [start, #4 * 116]
     ldr     q19, [start, #4 * 372]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 148]
-    ldr     q5, [start, #4 * 180]
-    ldr     q6, [start, #4 * 212]
-    ldr     q7, [start, #4 * 244]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 404]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 180]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 436]
-    ldr     q22, [start, #4 * 468]
-    ldr     q23, [start, #4 * 500]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 212]
 
+    ldr     q22, [start, #4 * 468]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 244]
+    ldr     q23, [start, #4 * 500]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -1123,12 +993,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -1165,12 +1029,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -1212,18 +1070,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 20]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 52]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -1235,9 +1089,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 84]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 116]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -1245,79 +1101,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 148]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 180]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 212]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 20]
-    str     q20, [start, #4 * 52]
-    str     q4, [start, #4 * 84]
-    str     q5, [start, #4 * 116]
-
-    str     q16, [start, #4 * 148]
-    str     q17, [start, #4 * 180]
-    str     q18, [start, #4 * 212]
     str     q19, [start, #4 * 244]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 276]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 308]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 276]
-    str     q9, [start, #4 * 308]
     str     q10, [start, #4 * 340]
     str     q11, [start, #4 * 372]
+    add     v14.4s, v14.4s, v2.4s
 
     str     q12, [start, #4 * 404]
     str     q13, [start, #4 * 436]
-    str     q14, [start, #4 * 468]
     str     q15, [start, #4 * 500]
+    str     q14, [start, #4 * 468]
 
     ldr     q0, [start, #4 * 24]
-    ldr     q1, [start, #4 * 56]
-    ldr     q2, [start, #4 * 88]
-    ldr     q3, [start, #4 * 120]
     ldr     q16, [start, #4 * 280]
+    ldr     q1, [start, #4 * 56]
     ldr     q17, [start, #4 * 312]
+    ldr     q2, [start, #4 * 88]
     ldr     q18, [start, #4 * 344]
+    ldr     q3, [start, #4 * 120]
     ldr     q19, [start, #4 * 376]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 152]
-    ldr     q5, [start, #4 * 184]
-    ldr     q6, [start, #4 * 216]
-    ldr     q7, [start, #4 * 248]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 408]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 184]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 440]
-    ldr     q22, [start, #4 * 472]
-    ldr     q23, [start, #4 * 504]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 216]
 
+    ldr     q22, [start, #4 * 472]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 248]
+    ldr     q23, [start, #4 * 504]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -1326,12 +1172,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -1368,12 +1208,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -1415,18 +1249,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 24]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 56]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -1438,9 +1268,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 88]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 120]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -1448,79 +1280,69 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 152]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 184]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 216]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 24]
-    str     q20, [start, #4 * 56]
-    str     q4, [start, #4 * 88]
-    str     q5, [start, #4 * 120]
-
-    str     q16, [start, #4 * 152]
-    str     q17, [start, #4 * 184]
-    str     q18, [start, #4 * 216]
     str     q19, [start, #4 * 248]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 280]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 312]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 280]
-    str     q9, [start, #4 * 312]
     str     q10, [start, #4 * 344]
     str     q11, [start, #4 * 376]
-
-    str     q12, [start, #4 * 408]
-    str     q13, [start, #4 * 440]
-    str     q14, [start, #4 * 472]
-    str     q15, [start, #4 * 504]
+    add     v14.4s, v14.4s, v2.4s
 
     ldr     q0, [start, #4 * 28]
+    str     q12, [start, #4 * 408]
     ldr     q1, [start, #4 * 60]
+    str     q13, [start, #4 * 440]
     ldr     q2, [start, #4 * 92]
+    str     q15, [start, #4 * 504]
     ldr     q3, [start, #4 * 124]
+    str     q14, [start, #4 * 472]
+
     ldr     q16, [start, #4 * 284]
     ldr     q17, [start, #4 * 316]
     ldr     q18, [start, #4 * 348]
     ldr     q19, [start, #4 * 380]
 
-    sub_add v0.4s, v16.4s, v8.4s
-    sub_add v1.4s, v17.4s, v9.4s
-    sub_add v2.4s, v18.4s, v10.4s
-    sub_add v3.4s, v19.4s, v11.4s
-
     ldr     q4, [start, #4 * 156]
-    ldr     q5, [start, #4 * 188]
-    ldr     q6, [start, #4 * 220]
-    ldr     q7, [start, #4 * 252]
-
+    sub_add v0.4s, v16.4s, v8.4s
     ldr     q20, [start, #4 * 412]
+    sub_add v1.4s, v17.4s, v9.4s
+    ldr     q5, [start, #4 * 188]
+    sub_add v2.4s, v18.4s, v10.4s
     ldr     q21, [start, #4 * 444]
-    ldr     q22, [start, #4 * 476]
-    ldr     q23, [start, #4 * 508]
+    sub_add v3.4s, v19.4s, v11.4s
+    ldr     q6, [start, #4 * 220]
 
+    ldr     q22, [start, #4 * 476]
     sub_add v4.4s, v20.4s, v12.4s
+    ldr     q7, [start, #4 * 252]
+    ldr     q23, [start, #4 * 508]
     sub_add v5.4s, v21.4s, v13.4s
 
     sub_add v0.4s, v4.4s, v16.4s
     sub_add v1.4s, v5.4s, v17.4s
-
     sub_add v6.4s, v22.4s, v14.4s
     sub_add v7.4s, v23.4s, v15.4s
 
@@ -1529,12 +1351,6 @@ __asm_ntt_forward:
 
     sub_add v2.4s, v6.4s, v18.4s
     sub_add v3.4s, v7.4s, v19.4s
-
-    // So now the order is:
-    // 0, 1, 2, 3
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v5.4s, v5.4s, v28.4s[3]
     sub     v4.4s, v4.4s, v5.4s
@@ -1571,12 +1387,6 @@ __asm_ntt_forward:
     mul     v3.4s, v18.4s, v26.4s[1]
     sqdmulh v3.4s, v3.4s, v28.4s[3]
     sub     v2.4s, v2.4s, v3.4s
-
-    // So now the order is:
-    // 0, 1, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
 
     sqdmulh v6.4s, v19.4s, v24.4s[1]
     sub     v18.4s, v16.4s, v2.4s
@@ -1618,18 +1428,14 @@ __asm_ntt_forward:
 
     sub_add v0.4s, v1.4s, v20.4s
 
-    // So now the order is:
-    // 0, 20, 4, 5
-    // 16, 17, 18, 19
-    // 8, 9, 10, 11
-    // 12, 13, 14, 15
-
     sqdmulh v1.4s, v5.4s, v24.4s[1]
     mul     v2.4s, v5.4s, v26.4s[1]
     sqdmulh v2.4s, v2.4s, v28.4s[3]
+    str     q0, [start, #4 * 28]
 
     sub     v1.4s, v1.4s, v2.4s
     sqdmulh v3.4s, v17.4s, v24.4s[2]
+    str     q20, [start, #4 * 60]
     sub     v5.4s, v4.4s, v1.4s
     mul     v6.4s, v17.4s, v26.4s[2]
     add     v4.4s, v4.4s, v1.4s
@@ -1641,9 +1447,11 @@ __asm_ntt_forward:
     mul     v21.4s, v19.4s, v26.4s[3]
     add     v16.4s, v16.4s, v3.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    str     q4, [start, #4 * 92]
 
     sub     v7.4s, v7.4s, v21.4s
     sqdmulh v22.4s, v9.4s, v25.4s[0]
+    str     q5, [start, #4 * 124]
     sub     v19.4s, v18.4s, v7.4s
     mul     v23.4s, v9.4s, v27.4s[0]
     sqdmulh v23.4s, v23.4s, v28.4s[3]
@@ -1651,50 +1459,41 @@ __asm_ntt_forward:
 
     sub     v22.4s, v22.4s, v23.4s
     sqdmulh v29.4s, v11.4s, v25.4s[1]
+    str     q16, [start, #4 * 156]
     sub     v9.4s, v8.4s, v22.4s
     mul     v30.4s, v11.4s, v27.4s[1]
     add     v8.4s, v8.4s, v22.4s
     sqdmulh v30.4s, v30.4s, v28.4s[3]
+    str     q17, [start, #4 * 188]
 
     sub     v29.4s, v29.4s, v30.4s
     sqdmulh v31.4s, v13.4s, v25.4s[2]
+    str     q18, [start, #4 * 220]
     sub     v11.4s, v10.4s, v29.4s
     mul     v1.4s, v13.4s, v27.4s[2]
     add     v10.4s, v10.4s, v29.4s
     sqdmulh v1.4s, v1.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 28]
-    str     q20, [start, #4 * 60]
-    str     q4, [start, #4 * 92]
-    str     q5, [start, #4 * 124]
-
-    str     q16, [start, #4 * 156]
-    str     q17, [start, #4 * 188]
-    str     q18, [start, #4 * 220]
     str     q19, [start, #4 * 252]
 
     sub     v31.4s, v31.4s, v1.4s
     sqdmulh v2.4s, v15.4s, v25.4s[3]
+    str     q8, [start, #4 * 284]
     sub     v13.4s, v12.4s, v31.4s
     mul     v3.4s, v15.4s, v27.4s[3]
     add     v12.4s, v12.4s, v31.4s
     sqdmulh v3.4s, v3.4s, v28.4s[3]
+    str     q9, [start, #4 * 316]
 
     sub     v2.4s, v2.4s, v3.4s
     sub     v15.4s, v14.4s, v2.4s
-    add     v14.4s, v14.4s, v2.4s
-
-    str     q8, [start, #4 * 284]
-    str     q9, [start, #4 * 316]
     str     q10, [start, #4 * 348]
     str     q11, [start, #4 * 380]
+    add     v14.4s, v14.4s, v2.4s
 
     str     q12, [start, #4 * 412]
     str     q13, [start, #4 * 444]
-    str     q14, [start, #4 * 476]
     str     q15, [start, #4 * 508]
-
-    // <END> LAYER 1234 .rept </END>
+    str     q14, [start, #4 * 476]
 
     /* Layers 5+6+7 */
     /* NTT forward layer 5: length = 16, ridx = 15, loops = 16 */
@@ -1702,15 +1501,6 @@ __asm_ntt_forward:
     /* NTT forward layer 7: length = 4,  ridx = 63, loops = 64 */
 
     mov     start, x0               // Store *coefficients[0]
-
-    /* Store layer specific values  */
-
-    add     x3, x1, #4 * 16         // LAYER 5: ridx, used for indexing B
-    add     x4, x2, #4 * 16         // LAYER 5: ridx, used for indexing B'
-    add     x5, x1, #4 * 32         // LAYER 6: ridx, used for indexing B
-    add     x6, x2, #4 * 32         // LAYER 6: ridx, used for indexing B'
-    add     x7, x1, #4 * 63         // LAYER 7: ridx, used for indexing B
-    add     x9, x2, #4 * 63         // LAYER 7: ridx, used for indexing B'
 
     /* Repeat this sequence 16 times. We need to perform the calculation for
      * every integer coefficient. We perform the calculation on 32 values in one
@@ -1721,13 +1511,24 @@ __asm_ntt_forward:
     ldr     q1, [start, #4 * 4]
     ldr     q5, [start, #4 * 20]
 
-    sub_add v0.4s, v4.4s, v8.4s
-    sub_add v1.4s, v5.4s, v9.4s
+    /* Store layer specific values  */
+
+    add     x3, x1, #4 * 16         // LAYER 5: ridx, used for indexing B
+    add     x4, x2, #4 * 16         // LAYER 5: ridx, used for indexing B'
+    add     x5, x1, #4 * 32         // LAYER 6: ridx, used for indexing B
 
     ldr     q2, [start, #4 * 8]
     ldr     q6, [start, #4 * 24]
+
+    sub_add v0.4s, v4.4s, v8.4s
+    sub_add v1.4s, v5.4s, v9.4s
+
     ldr     q3, [start, #4 * 12]
     ldr     q7, [start, #4 * 28]
+
+    add     x6, x2, #4 * 32         // LAYER 6: ridx, used for indexing B'
+    add     x7, x1, #4 * 63         // LAYER 7: ridx, used for indexing B
+    add     x9, x2, #4 * 63         // LAYER 7: ridx, used for indexing B'
 
     sub_add v2.4s, v6.4s, v10.4s
     sub_add v3.4s, v7.4s, v11.4s
@@ -1736,10 +1537,10 @@ __asm_ntt_forward:
     // 0, 1, 2, 3
     // 8, 9, 10, 11
 
-    sub_add v0.4s, v2.4s, v12.4s
-
     ldr     q26, [x5], #4
     ldr     q27, [x6], #4
+
+    sub_add v0.4s, v2.4s, v12.4s
 
     sqdmulh v16.4s, v10.4s, v26.4s[0]
     sub     v13.4s, v1.4s, v3.4s
@@ -1774,9 +1575,9 @@ __asm_ntt_forward:
     sqdmulh v16.4s, v13.4s, v30.4s[1]
     mul     v17.4s, v13.4s, v31.4s[1]
     sqdmulh v17.4s, v17.4s, v28.4s[3]
-
-    str     q0, [start, #4 * 0]
     str     q14, [start, #4 * 4]
+    str     q0, [start, #4 * 0]
+
 
     sqdmulh v18.4s, v9.4s, v30.4s[2]
     sub     v16.4s, v16.4s, v17.4s
@@ -1798,40 +1599,30 @@ __asm_ntt_forward:
     str     q9, [start, #4 * 20]
 
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q24, [x3], #4
     sub     v20.4s, v20.4s, v21.4s
     sub     v11.4s, v10.4s, v20.4s
     add     v10.4s, v10.4s, v20.4s
 
+    ldr     q25, [x4], #4
+    ldr     q4, [start, #4 * 48]
+
     str     q10, [start, #4 * 24]
     str     q11, [start, #4 * 28]
 
-    add     start, start, #4 * 32   // Update pointer to next first coefficient
-
-    .rept 15
-
-    ldr     q0, [start, #4 * 0]
-    ldr     q1, [start, #4 * 4]
-    ldr     q4, [start, #4 * 16]
-    ldr     q5, [start, #4 * 20]
-
-    ldr     q24, [x3], #4
-    ldr     q25, [x4], #4
-    ldr     q26, [x5], #8
-    ldr     q27, [x6], #8
-    ldr     q30, [x7], #16
-    ldr     q31, [x9], #16
+    ldr     q5, [start, #4 * 52]
+    ldr     q0, [start, #4 * 32]
+    ldr     q1, [start, #4 * 36]
 
     sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 56]
     mul     v17.4s, v4.4s, v25.4s[0]
-
-    ldr     q6, [start, #4 * 24]
-    ldr     q7, [start, #4 * 28]
+    ldr     q7, [start, #4 * 60]
 
     sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 40]
     sub     v16.4s, v16.4s, v17.4s
-
-    ldr     q2, [start, #4 * 8]
-    ldr     q3, [start, #4 * 12]
+    ldr     q3, [start, #4 * 44]
 
     sqdmulh v18.4s, v5.4s, v24.4s[0]
     sub     v4.4s, v0.4s, v16.4s
@@ -1841,10 +1632,12 @@ __asm_ntt_forward:
     sub     v18.4s, v18.4s, v19.4s
 
     sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
     sub     v5.4s, v1.4s, v18.4s
     mul     v21.4s, v6.4s, v25.4s[0]
     add     v1.4s, v1.4s, v18.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
     sub     v20.4s, v20.4s, v21.4s
 
     sqdmulh v22.4s, v7.4s, v24.4s[0]
@@ -1855,10 +1648,12 @@ __asm_ntt_forward:
     sub     v22.4s, v22.4s, v23.4s
 
     sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
     sub     v7.4s, v3.4s, v22.4s
     mul     v17.4s, v2.4s, v27.4s[0]
     add     v3.4s, v3.4s, v22.4s
     sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
     sub     v16.4s, v16.4s, v17.4s
 
     sqdmulh v18.4s, v3.4s, v26.4s[0]
@@ -1894,19 +1689,19 @@ __asm_ntt_forward:
     mul     v19.4s, v3.4s, v31.4s[1]
     add     v0.4s, v0.4s, v16.4s
     sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 36]
     sub     v18.4s, v18.4s, v19.4s
 
     sqdmulh v20.4s, v5.4s, v30.4s[2]
-    str     q0, [start, #4 * 0]
+    str     q0, [start, #4 * 32]
 
     sub     v3.4s, v2.4s, v18.4s
     mul     v21.4s, v5.4s, v31.4s[2]
     add     v2.4s, v2.4s, v18.4s
     sqdmulh v21.4s, v21.4s, v28.4s[3]
     sub     v20.4s, v20.4s, v21.4s
-
     sqdmulh v22.4s, v7.4s, v30.4s[3]
-    str     q1, [start, #4 * 4]
+    str     q2, [start, #4 * 40]
 
     sub     v5.4s, v4.4s, v20.4s
     mul     v23.4s, v7.4s, v31.4s[3]
@@ -1914,20 +1709,1583 @@ __asm_ntt_forward:
     sqdmulh v23.4s, v23.4s, v28.4s[3]
     sub     v22.4s, v22.4s, v23.4s
 
-    str     q2, [start, #4 * 8]
-    str     q3, [start, #4 * 12]
-
+    str     q3, [start, #4 * 44]
     sub     v7.4s, v6.4s, v22.4s
     add     v6.4s, v6.4s, v22.4s
 
-    str     q4, [start, #4 * 16]
-    str     q5, [start, #4 * 20]
-    str     q6, [start, #4 * 24]
-    str     q7, [start, #4 * 28]
+    str     q4, [start, #4 * 48]
+    str     q5, [start, #4 * 52]
+    str     q6, [start, #4 * 56]
+    str     q7, [start, #4 * 60]
 
-    add     start, start, #4 * 32   // Update pointer to next first coefficient
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
 
-    .endr
+    ldr     q4, [start, #4 * 80]
+    ldr     q5, [start, #4 * 84]
+    ldr     q0, [start, #4 * 64]
+    ldr     q1, [start, #4 * 68]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 88]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 92]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 72]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 76]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 68]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 64]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 72]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 76]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    str     q4, [start, #4 * 80]
+    str     q5, [start, #4 * 84]
+    str     q6, [start, #4 * 88]
+    str     q7, [start, #4 * 92]
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    ldr     q4, [start, #4 * 112]
+    ldr     q5, [start, #4 * 116]
+    ldr     q0, [start, #4 * 96]
+    ldr     q1, [start, #4 * 100]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 120]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 124]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 104]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 108]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 100]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 96]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 104]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 108]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 112]
+    ldr     q4, [start, #4 * 144]
+    str     q5, [start, #4 * 116]
+    ldr     q5, [start, #4 * 148]
+    str     q6, [start, #4 * 120]
+    str     q7, [start, #4 * 124]
+
+    ldr     q0, [start, #4 * 128]
+    ldr     q1, [start, #4 * 132]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 152]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 156]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 136]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 140]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 132]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 128]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 136]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 140]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 144]
+    ldr     q4, [start, #4 * 176]
+    str     q5, [start, #4 * 148]
+    ldr     q5, [start, #4 * 180]
+    str     q6, [start, #4 * 152]
+    str     q7, [start, #4 * 156]
+
+    ldr     q0, [start, #4 * 160]
+    ldr     q1, [start, #4 * 164]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 184]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 188]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 168]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 172]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 164]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 160]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 168]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 172]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 176]
+    ldr     q4, [start, #4 * 208]
+    str     q5, [start, #4 * 180]
+    ldr     q5, [start, #4 * 212]
+    str     q6, [start, #4 * 184]
+    str     q7, [start, #4 * 188]
+
+    ldr     q0, [start, #4 * 192]
+    ldr     q1, [start, #4 * 196]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 216]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 220]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 200]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 204]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 196]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 192]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 200]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 204]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 208]
+    ldr     q4, [start, #4 * 240]
+    str     q5, [start, #4 * 212]
+    ldr     q5, [start, #4 * 244]
+    str     q6, [start, #4 * 216]
+    str     q7, [start, #4 * 220]
+
+    ldr     q0, [start, #4 * 224]
+    ldr     q1, [start, #4 * 228]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 248]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 252]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 232]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 236]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 228]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 224]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 232]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 236]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 240]
+    ldr     q4, [start, #4 * 272]
+    str     q5, [start, #4 * 244]
+    str     q6, [start, #4 * 248]
+    ldr     q5, [start, #4 * 276]
+    str     q7, [start, #4 * 252]
+
+    ldr     q0, [start, #4 * 256]
+    ldr     q1, [start, #4 * 260]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 280]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 284]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 264]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 268]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 260]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 256]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 264]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 268]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 272]
+    ldr     q4, [start, #4 * 304]
+    str     q5, [start, #4 * 276]
+    ldr     q5, [start, #4 * 308]
+    str     q6, [start, #4 * 280]
+    str     q7, [start, #4 * 284]
+
+    ldr     q0, [start, #4 * 288]
+    ldr     q1, [start, #4 * 292]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 312]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 316]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 296]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 300]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 292]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 288]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 296]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 300]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 304]
+    ldr     q4, [start, #4 * 336]
+    str     q5, [start, #4 * 308]
+    ldr     q5, [start, #4 * 340]
+    str     q6, [start, #4 * 312]
+    str     q7, [start, #4 * 316]
+
+    ldr     q0, [start, #4 * 320]
+    ldr     q1, [start, #4 * 324]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 344]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 348]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 328]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 332]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 324]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 320]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 328]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 332]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 336]
+    ldr     q4, [start, #4 * 368]
+    str     q5, [start, #4 * 340]
+    ldr     q5, [start, #4 * 372]
+    str     q6, [start, #4 * 344]
+    str     q7, [start, #4 * 348]
+
+    ldr     q0, [start, #4 * 352]
+    ldr     q1, [start, #4 * 356]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 376]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 380]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 360]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 364]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 356]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 352]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 360]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 364]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 368]
+    ldr     q4, [start, #4 * 400]
+    str     q5, [start, #4 * 372]
+    ldr     q5, [start, #4 * 404]
+    str     q6, [start, #4 * 376]
+    str     q7, [start, #4 * 380]
+
+    ldr     q0, [start, #4 * 384]
+    ldr     q1, [start, #4 * 388]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 408]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 412]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 392]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 396]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 388]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 384]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 392]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 396]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 400]
+    ldr     q4, [start, #4 * 432]
+    str     q5, [start, #4 * 404]
+    ldr     q5, [start, #4 * 436]
+    str     q6, [start, #4 * 408]
+    str     q7, [start, #4 * 412]
+
+    ldr     q0, [start, #4 * 416]
+    ldr     q1, [start, #4 * 420]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 440]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 444]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 424]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 428]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 420]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 416]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 424]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 428]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 432]
+    ldr     q4, [start, #4 * 464]
+    str     q5, [start, #4 * 436]
+    ldr     q5, [start, #4 * 468]
+    str     q6, [start, #4 * 440]
+    str     q7, [start, #4 * 444]
+
+    ldr     q0, [start, #4 * 448]
+    ldr     q1, [start, #4 * 452]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 472]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 476]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 456]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 460]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 452]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 448]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 456]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 460]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    ldr     q24, [x3], #4
+    ldr     q25, [x4], #4
+
+    str     q4, [start, #4 * 464]
+    ldr     q4, [start, #4 * 496]
+    str     q5, [start, #4 * 468]
+    ldr     q5, [start, #4 * 500]
+    str     q6, [start, #4 * 472]
+    str     q7, [start, #4 * 476]
+
+    ldr     q0, [start, #4 * 480]
+    ldr     q1, [start, #4 * 484]
+
+    sqdmulh v16.4s, v4.4s, v24.4s[0]
+    ldr     q6, [start, #4 * 504]
+    mul     v17.4s, v4.4s, v25.4s[0]
+    ldr     q7, [start, #4 * 508]
+
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q2, [start, #4 * 488]
+    sub     v16.4s, v16.4s, v17.4s
+    ldr     q3, [start, #4 * 492]
+
+    sqdmulh v18.4s, v5.4s, v24.4s[0]
+    sub     v4.4s, v0.4s, v16.4s
+    mul     v19.4s, v5.4s, v25.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v24.4s[0]
+    ldr     q26, [x5], #8
+    sub     v5.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v25.4s[0]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    ldr     q27, [x6], #8
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v24.4s[0]
+    sub     v6.4s, v2.4s, v20.4s
+    mul     v23.4s, v7.4s, v25.4s[0]
+    add     v2.4s, v2.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v2.4s, v26.4s[0]
+    ldr     q30, [x7], #16
+    sub     v7.4s, v3.4s, v22.4s
+    mul     v17.4s, v2.4s, v27.4s[0]
+    add     v3.4s, v3.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    ldr     q31, [x9], #16
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v26.4s[0]
+    sub     v2.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v27.4s[0]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v6.4s, v26.4s[1]
+    sub     v3.4s, v1.4s, v18.4s
+    mul     v21.4s, v6.4s, v27.4s[1]
+    add     v1.4s, v1.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+
+    sqdmulh v22.4s, v7.4s, v26.4s[1]
+    sub     v6.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v27.4s[1]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    sqdmulh v16.4s, v1.4s, v30.4s[0]
+    sub     v7.4s, v5.4s, v22.4s
+    mul     v17.4s, v1.4s, v31.4s[0]
+    add     v5.4s, v5.4s, v22.4s
+    sqdmulh v17.4s, v17.4s, v28.4s[3]
+    sub     v16.4s, v16.4s, v17.4s
+
+    sqdmulh v18.4s, v3.4s, v30.4s[1]
+    sub     v1.4s, v0.4s, v16.4s
+    mul     v19.4s, v3.4s, v31.4s[1]
+    add     v0.4s, v0.4s, v16.4s
+    sqdmulh v19.4s, v19.4s, v28.4s[3]
+    str     q1, [start, #4 * 484]
+    sub     v18.4s, v18.4s, v19.4s
+
+    sqdmulh v20.4s, v5.4s, v30.4s[2]
+    str     q0, [start, #4 * 480]
+
+    sub     v3.4s, v2.4s, v18.4s
+    mul     v21.4s, v5.4s, v31.4s[2]
+    add     v2.4s, v2.4s, v18.4s
+    sqdmulh v21.4s, v21.4s, v28.4s[3]
+    sub     v20.4s, v20.4s, v21.4s
+    sqdmulh v22.4s, v7.4s, v30.4s[3]
+    str     q2, [start, #4 * 488]
+
+    sub     v5.4s, v4.4s, v20.4s
+    mul     v23.4s, v7.4s, v31.4s[3]
+    add     v4.4s, v4.4s, v20.4s
+    sqdmulh v23.4s, v23.4s, v28.4s[3]
+    sub     v22.4s, v22.4s, v23.4s
+
+    str     q3, [start, #4 * 492]
+    sub     v7.4s, v6.4s, v22.4s
+    add     v6.4s, v6.4s, v22.4s
+
+    str     q4, [start, #4 * 496]
+    str     q5, [start, #4 * 500]
+    str     q6, [start, #4 * 504]
+    str     q7, [start, #4 * 508]
+
 
     /* Layers 8+9 */
     /* NTT forward layer 8: length = 2, ridx = 127, loops = 128 */
@@ -1978,10 +3336,8 @@ __asm_ntt_forward:
     // [8, 9, 12, 13] * [10, 11, 14, 15] = V1 * V3
 
     ldr     q12, [x3], #16
-
     mul     v17.4s, v2.4s, v24.4s
     sqdmulh v17.4s, v17.4s, v28.4s[3]
-
     ldr     q13, [x4], #16
 
     // Register placement:

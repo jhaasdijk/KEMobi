@@ -168,18 +168,16 @@ __asm_ntt_inverse:
     /* Store layer specific values  */
 
     add     x3, x1, #4 * 384        // LAYER 7: ridx, used for indexing B
-    add     x4, x2, #4 * 384        // LAYER 7: ridx, used for indexing B'
-    add     x5, x1, #4 * 449        // LAYER 6: ridx, used for indexing B
-    add     x6, x2, #4 * 449        // LAYER 6: ridx, used for indexing B'
-    add     x7, x1, #4 * 481        // LAYER 5: ridx, used for indexing B
-    add     x9, x2, #4 * 481        // LAYER 5: ridx, used for indexing B'
-
     ldr     q0, [start, #4 * 0]
+    add     x4, x2, #4 * 384        // LAYER 7: ridx, used for indexing B'
     ldr     q1, [start, #4 * 4]
+    add     x5, x1, #4 * 449        // LAYER 6: ridx, used for indexing B
     ldr     q2, [start, #4 * 8]
+    add     x6, x2, #4 * 449        // LAYER 6: ridx, used for indexing B'
     ldr     q3, [start, #4 * 12]
-
+    add     x7, x1, #4 * 481        // LAYER 5: ridx, used for indexing B
     sub_add v0.4s, v1.4s, v8.4s
+    add     x9, x2, #4 * 481        // LAYER 5: ridx, used for indexing B'
 
     // So now the order is:
     // 0, 8, 2, 3
@@ -188,11 +186,11 @@ __asm_ntt_inverse:
     ldr     q27, [x3], #16
     ldr     q29, [x4], #16
 
+    ldr     q4, [start, #4 * 16]
     sub     v15.4s, v2.4s, v3.4s
+    ldr     q5, [start, #4 * 20]
     add     v2.4s, v2.4s, v3.4s
 
-    ldr     q4, [start, #4 * 16]
-    ldr     q5, [start, #4 * 20]
     ldr     q6, [start, #4 * 24]
     ldr     q7, [start, #4 * 28]
 
@@ -260,8 +258,6 @@ __asm_ntt_inverse:
     // 0, 8, 9, 10
     // 11, 12, 13, 14
 
-    // <START> LAYER 765 .rept </START>
-
     ldr     q0, [start, #4 * 32]
     ldr     q1, [start, #4 * 36]
     ldr     q2, [start, #4 * 40]
@@ -269,13 +265,12 @@ __asm_ntt_inverse:
 
     ldr     q24, [x3], #16
     ldr     q25, [x4], #16
+
     sub     v16.4s, v0.4s, v1.4s
     add     v0.4s, v0.4s, v1.4s
 
     ldr     q4, [start, #4 * 48]
     ldr     q5, [start, #4 * 52]
-    ldr     q6, [start, #4 * 56]
-    ldr     q7, [start, #4 * 60]
 
     sqdmulh v17.4s, v16.4s, v24.4s[0]
     sub     v18.4s, v2.4s, v3.4s
@@ -283,6 +278,9 @@ __asm_ntt_inverse:
     add     v2.4s, v2.4s, v3.4s
     sqdmulh v16.4s, v16.4s, v28.4s[3]
     sub     v1.4s, v17.4s, v16.4s
+
+    ldr     q6, [start, #4 * 56]
+    ldr     q7, [start, #4 * 60]
 
     sqdmulh v19.4s, v18.4s, v24.4s[1]
     sub     v20.4s, v4.4s, v5.4s
@@ -361,33 +359,31 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 32]
+    ldr     q0, [start, #4 * 64]
     str     q1, [start, #4 * 36]
+    ldr     q1, [start, #4 * 68]
     str     q2, [start, #4 * 40]
+    ldr     q2, [start, #4 * 72]
     str     q3, [start, #4 * 44]
+    ldr     q3, [start, #4 * 76]
 
     sqdmulh v23.4s, v22.4s, v30.4s[0]
     mul     v22.4s, v22.4s, v31.4s[0]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
     sub     v7.4s, v23.4s, v22.4s
 
-    str     q4, [start, #4 * 48]
-    str     q5, [start, #4 * 52]
-    str     q6, [start, #4 * 56]
-    str     q7, [start, #4 * 60]
-
-    ldr     q0, [start, #4 * 64]
-    ldr     q1, [start, #4 * 68]
-    ldr     q2, [start, #4 * 72]
-    ldr     q3, [start, #4 * 76]
-
     ldr     q24, [x3], #16
     ldr     q25, [x4], #16
     sub     v16.4s, v0.4s, v1.4s
     add     v0.4s, v0.4s, v1.4s
 
+    str     q4, [start, #4 * 48]
     ldr     q4, [start, #4 * 80]
+    str     q5, [start, #4 * 52]
     ldr     q5, [start, #4 * 84]
+    str     q6, [start, #4 * 56]
     ldr     q6, [start, #4 * 88]
+    str     q7, [start, #4 * 60]
     ldr     q7, [start, #4 * 92]
 
     sqdmulh v17.4s, v16.4s, v24.4s[0]
@@ -474,33 +470,31 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 64]
+    ldr     q0, [start, #4 * 96]
     str     q1, [start, #4 * 68]
+    ldr     q1, [start, #4 * 100]
     str     q2, [start, #4 * 72]
+    ldr     q2, [start, #4 * 104]
     str     q3, [start, #4 * 76]
+    ldr     q3, [start, #4 * 108]
 
     sqdmulh v23.4s, v22.4s, v30.4s[0]
     mul     v22.4s, v22.4s, v31.4s[0]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
     sub     v7.4s, v23.4s, v22.4s
 
-    str     q4, [start, #4 * 80]
-    str     q5, [start, #4 * 84]
-    str     q6, [start, #4 * 88]
-    str     q7, [start, #4 * 92]
-
-    ldr     q0, [start, #4 * 96]
-    ldr     q1, [start, #4 * 100]
-    ldr     q2, [start, #4 * 104]
-    ldr     q3, [start, #4 * 108]
-
     ldr     q24, [x3], #16
     ldr     q25, [x4], #16
     sub     v16.4s, v0.4s, v1.4s
     add     v0.4s, v0.4s, v1.4s
 
+    str     q4, [start, #4 * 80]
     ldr     q4, [start, #4 * 112]
+    str     q5, [start, #4 * 84]
     ldr     q5, [start, #4 * 116]
+    str     q6, [start, #4 * 88]
     ldr     q6, [start, #4 * 120]
+    str     q7, [start, #4 * 92]
     ldr     q7, [start, #4 * 124]
 
     sqdmulh v17.4s, v16.4s, v24.4s[0]
@@ -587,33 +581,31 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 96]
+    ldr     q0, [start, #4 * 128]
     str     q1, [start, #4 * 100]
+    ldr     q1, [start, #4 * 132]
     str     q2, [start, #4 * 104]
+    ldr     q2, [start, #4 * 136]
     str     q3, [start, #4 * 108]
+    ldr     q3, [start, #4 * 140]
 
     sqdmulh v23.4s, v22.4s, v30.4s[0]
     mul     v22.4s, v22.4s, v31.4s[0]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
     sub     v7.4s, v23.4s, v22.4s
 
-    str     q4, [start, #4 * 112]
-    str     q5, [start, #4 * 116]
-    str     q6, [start, #4 * 120]
-    str     q7, [start, #4 * 124]
-
-    ldr     q0, [start, #4 * 128]
-    ldr     q1, [start, #4 * 132]
-    ldr     q2, [start, #4 * 136]
-    ldr     q3, [start, #4 * 140]
-
     ldr     q24, [x3], #16
     ldr     q25, [x4], #16
     sub     v16.4s, v0.4s, v1.4s
     add     v0.4s, v0.4s, v1.4s
 
+    str     q4, [start, #4 * 112]
     ldr     q4, [start, #4 * 144]
+    str     q5, [start, #4 * 116]
     ldr     q5, [start, #4 * 148]
+    str     q6, [start, #4 * 120]
     ldr     q6, [start, #4 * 152]
+    str     q7, [start, #4 * 124]
     ldr     q7, [start, #4 * 156]
 
     sqdmulh v17.4s, v16.4s, v24.4s[0]
@@ -710,13 +702,12 @@ __asm_ntt_inverse:
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 144]
-    str     q5, [start, #4 * 148]
-    str     q6, [start, #4 * 152]
-    str     q7, [start, #4 * 156]
-
     ldr     q0, [start, #4 * 160]
+    str     q5, [start, #4 * 148]
     ldr     q1, [start, #4 * 164]
+    str     q6, [start, #4 * 152]
     ldr     q2, [start, #4 * 168]
+    str     q7, [start, #4 * 156]
     ldr     q3, [start, #4 * 172]
 
     ldr     q24, [x3], #16
@@ -823,14 +814,13 @@ __asm_ntt_inverse:
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 176]
-    str     q5, [start, #4 * 180]
-    str     q6, [start, #4 * 184]
-    str     q7, [start, #4 * 188]
-
     ldr     q0, [start, #4 * 192]
+    str     q5, [start, #4 * 180]
     ldr     q1, [start, #4 * 196]
     ldr     q2, [start, #4 * 200]
+    str     q6, [start, #4 * 184]
     ldr     q3, [start, #4 * 204]
+    str     q7, [start, #4 * 188]
 
     ldr     q24, [x3], #16
     ldr     q25, [x4], #16
@@ -936,13 +926,12 @@ __asm_ntt_inverse:
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 208]
-    str     q5, [start, #4 * 212]
-    str     q6, [start, #4 * 216]
-    str     q7, [start, #4 * 220]
-
     ldr     q0, [start, #4 * 224]
+    str     q5, [start, #4 * 212]
     ldr     q1, [start, #4 * 228]
+    str     q6, [start, #4 * 216]
     ldr     q2, [start, #4 * 232]
+    str     q7, [start, #4 * 220]
     ldr     q3, [start, #4 * 236]
 
     ldr     q24, [x3], #16
@@ -1049,13 +1038,12 @@ __asm_ntt_inverse:
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 240]
-    str     q5, [start, #4 * 244]
-    str     q6, [start, #4 * 248]
-    str     q7, [start, #4 * 252]
-
     ldr     q0, [start, #4 * 256]
+    str     q5, [start, #4 * 244]
     ldr     q1, [start, #4 * 260]
+    str     q6, [start, #4 * 248]
     ldr     q2, [start, #4 * 264]
+    str     q7, [start, #4 * 252]
     ldr     q3, [start, #4 * 268]
 
     ldr     q24, [x3], #16
@@ -1162,13 +1150,12 @@ __asm_ntt_inverse:
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 272]
-    str     q5, [start, #4 * 276]
-    str     q6, [start, #4 * 280]
-    str     q7, [start, #4 * 284]
-
     ldr     q0, [start, #4 * 288]
+    str     q5, [start, #4 * 276]
     ldr     q1, [start, #4 * 292]
+    str     q6, [start, #4 * 280]
     ldr     q2, [start, #4 * 296]
+    str     q7, [start, #4 * 284]
     ldr     q3, [start, #4 * 300]
 
     ldr     q24, [x3], #16
@@ -1265,23 +1252,21 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 288]
-    str     q1, [start, #4 * 292]
-    str     q2, [start, #4 * 296]
-    str     q3, [start, #4 * 300]
-
     sqdmulh v23.4s, v22.4s, v30.4s[0]
+    str     q1, [start, #4 * 292]
     mul     v22.4s, v22.4s, v31.4s[0]
+    str     q2, [start, #4 * 296]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
+    str     q3, [start, #4 * 300]
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 304]
-    str     q5, [start, #4 * 308]
-    str     q6, [start, #4 * 312]
-    str     q7, [start, #4 * 316]
-
     ldr     q0, [start, #4 * 320]
+    str     q5, [start, #4 * 308]
     ldr     q1, [start, #4 * 324]
+    str     q6, [start, #4 * 312]
     ldr     q2, [start, #4 * 328]
+    str     q7, [start, #4 * 316]
     ldr     q3, [start, #4 * 332]
 
     ldr     q24, [x3], #16
@@ -1378,23 +1363,21 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 320]
-    str     q1, [start, #4 * 324]
-    str     q2, [start, #4 * 328]
-    str     q3, [start, #4 * 332]
-
     sqdmulh v23.4s, v22.4s, v30.4s[0]
+    str     q1, [start, #4 * 324]
     mul     v22.4s, v22.4s, v31.4s[0]
+    str     q2, [start, #4 * 328]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
+    str     q3, [start, #4 * 332]
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 336]
-    str     q5, [start, #4 * 340]
-    str     q6, [start, #4 * 344]
-    str     q7, [start, #4 * 348]
-
     ldr     q0, [start, #4 * 352]
+    str     q5, [start, #4 * 340]
     ldr     q1, [start, #4 * 356]
+    str     q6, [start, #4 * 344]
     ldr     q2, [start, #4 * 360]
+    str     q7, [start, #4 * 348]
     ldr     q3, [start, #4 * 364]
 
     ldr     q24, [x3], #16
@@ -1491,23 +1474,21 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 352]
-    str     q1, [start, #4 * 356]
-    str     q2, [start, #4 * 360]
-    str     q3, [start, #4 * 364]
-
     sqdmulh v23.4s, v22.4s, v30.4s[0]
+    str     q1, [start, #4 * 356]
     mul     v22.4s, v22.4s, v31.4s[0]
+    str     q2, [start, #4 * 360]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
+    str     q3, [start, #4 * 364]
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 368]
-    str     q5, [start, #4 * 372]
-    str     q6, [start, #4 * 376]
-    str     q7, [start, #4 * 380]
-
     ldr     q0, [start, #4 * 384]
+    str     q5, [start, #4 * 372]
     ldr     q1, [start, #4 * 388]
+    str     q6, [start, #4 * 376]
     ldr     q2, [start, #4 * 392]
+    str     q7, [start, #4 * 380]
     ldr     q3, [start, #4 * 396]
 
     ldr     q24, [x3], #16
@@ -1604,23 +1585,21 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 384]
-    str     q1, [start, #4 * 388]
-    str     q2, [start, #4 * 392]
-    str     q3, [start, #4 * 396]
-
     sqdmulh v23.4s, v22.4s, v30.4s[0]
+    str     q1, [start, #4 * 388]
     mul     v22.4s, v22.4s, v31.4s[0]
+    str     q2, [start, #4 * 392]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
+    str     q3, [start, #4 * 396]
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 400]
-    str     q5, [start, #4 * 404]
-    str     q6, [start, #4 * 408]
-    str     q7, [start, #4 * 412]
-
     ldr     q0, [start, #4 * 416]
+    str     q5, [start, #4 * 404]
     ldr     q1, [start, #4 * 420]
+    str     q6, [start, #4 * 408]
     ldr     q2, [start, #4 * 424]
+    str     q7, [start, #4 * 412]
     ldr     q3, [start, #4 * 428]
 
     ldr     q24, [x3], #16
@@ -1717,23 +1696,21 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 416]
-    str     q1, [start, #4 * 420]
-    str     q2, [start, #4 * 424]
-    str     q3, [start, #4 * 428]
-
     sqdmulh v23.4s, v22.4s, v30.4s[0]
+    str     q1, [start, #4 * 420]
     mul     v22.4s, v22.4s, v31.4s[0]
+    str     q2, [start, #4 * 424]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
+    str     q3, [start, #4 * 428]
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 432]
-    str     q5, [start, #4 * 436]
-    str     q6, [start, #4 * 440]
-    str     q7, [start, #4 * 444]
-
     ldr     q0, [start, #4 * 448]
+    str     q5, [start, #4 * 436]
     ldr     q1, [start, #4 * 452]
+    str     q6, [start, #4 * 440]
     ldr     q2, [start, #4 * 456]
+    str     q7, [start, #4 * 444]
     ldr     q3, [start, #4 * 460]
 
     ldr     q24, [x3], #16
@@ -1830,23 +1807,21 @@ __asm_ntt_inverse:
     sub     v6.4s, v21.4s, v20.4s
 
     str     q0, [start, #4 * 448]
-    str     q1, [start, #4 * 452]
-    str     q2, [start, #4 * 456]
-    str     q3, [start, #4 * 460]
-
     sqdmulh v23.4s, v22.4s, v30.4s[0]
+    str     q1, [start, #4 * 452]
     mul     v22.4s, v22.4s, v31.4s[0]
+    str     q2, [start, #4 * 456]
     sqdmulh v22.4s, v22.4s, v28.4s[3]
+    str     q3, [start, #4 * 460]
     sub     v7.4s, v23.4s, v22.4s
 
     str     q4, [start, #4 * 464]
-    str     q5, [start, #4 * 468]
-    str     q6, [start, #4 * 472]
-    str     q7, [start, #4 * 476]
-
     ldr     q0, [start, #4 * 480]
+    str     q5, [start, #4 * 468]
     ldr     q1, [start, #4 * 484]
+    str     q6, [start, #4 * 472]
     ldr     q2, [start, #4 * 488]
+    str     q7, [start, #4 * 476]
     ldr     q3, [start, #4 * 492]
 
     ldr     q24, [x3], #16
@@ -1957,8 +1932,6 @@ __asm_ntt_inverse:
     str     q6, [start, #4 * 504]
     str     q7, [start, #4 * 508]
 
-    // <END> LAYER 765 .rept </END>
-
     /* Layers 4+3+2+1 */
     /* NTT inverse layer 4: length = 32, ridx = 496, loops = 8 */
     /* NTT inverse layer 3: length = 64, ridx = 504, loops = 4 */
@@ -1967,11 +1940,6 @@ __asm_ntt_inverse:
 
     mov     start, x0               // Store *coefficients[0]
 
-    /* Store layer specific values  */
-
-    add     x3, x1, #4 * 496        // Store *B[496]
-    add     x4, x2, #4 * 496        // Store *B'[496]
-
     /* Preload the required root values, we have enough room */
     /* This works because there are actually only 16 different values */
     /* [496] == [504] == [508] == [510] */
@@ -1979,15 +1947,14 @@ __asm_ntt_inverse:
     /* [498] == [506] */
     /* [499] == [507] */
 
-    ldr     q24, [x3], #4 * 4       // B[496, 497, 498, 499]
-    ldr     q25, [x3], #4 * 4       // B[500, 501, 502, 503]
-    ldr     q26, [x4], #4 * 4       // B'[496, 497, 498, 499]
-    ldr     q27, [x4]               // B'[500, 501, 502, 503]
-
-    // <START> LAYER 1234 .rept </START>
+    ldr     q24, [x1, #4 * 496]     // B[496, 497, 498, 499]
+    ldr     q25, [x1, #4 * 500]     // B[500, 501, 502, 503]
+    ldr     q26, [x2, #4 * 496]     // B'[496, 497, 498, 499]
+    ldr     q27, [x2, #4 * 500]     // B'[500, 501, 502, 503]
 
     ldr     q0, [start, #4 * 0]
     ldr     q1, [start, #4 * 32]
+
     ldr     q2, [start, #4 * 64]
     ldr     q3, [start, #4 * 96]
 
@@ -1996,14 +1963,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 128]
     ldr     q5, [start, #4 * 160]
+
     ldr     q6, [start, #4 * 192]
     ldr     q7, [start, #4 * 224]
 
@@ -2020,18 +1982,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 256]
+    ldr     q17, [start, #4 * 288]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 256]
-    ldr     q17, [start, #4 * 288]
     ldr     q18, [start, #4 * 320]
     ldr     q19, [start, #4 * 352]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 384]
+    ldr     q21, [start, #4 * 416]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -2040,8 +2006,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 384]
-    ldr     q21, [start, #4 * 416]
     ldr     q22, [start, #4 * 448]
     ldr     q23, [start, #4 * 480]
 
@@ -2066,12 +2030,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -2118,12 +2076,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -2166,33 +2118,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 96]
 
     str     q2, [start, #4 * 256]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 288]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 320]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 352]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 128]
-    str     q12, [start, #4 * 160]
-    str     q13, [start, #4 * 192]
-    str     q14, [start, #4 * 224]
-
     str     q6, [start, #4 * 384]
+
+    str     q12, [start, #4 * 160]
     str     q7, [start, #4 * 416]
+
+    str     q13, [start, #4 * 192]
     str     q15, [start, #4 * 448]
+
+    str     q14, [start, #4 * 224]
     str     q29, [start, #4 * 480]
 
     ldr     q0, [start, #4 * 4]
     ldr     q1, [start, #4 * 36]
+
     ldr     q2, [start, #4 * 68]
     ldr     q3, [start, #4 * 100]
 
@@ -2201,14 +2150,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 132]
     ldr     q5, [start, #4 * 164]
+
     ldr     q6, [start, #4 * 196]
     ldr     q7, [start, #4 * 228]
 
@@ -2225,18 +2169,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 260]
+    ldr     q17, [start, #4 * 292]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 260]
-    ldr     q17, [start, #4 * 292]
     ldr     q18, [start, #4 * 324]
     ldr     q19, [start, #4 * 356]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 388]
+    ldr     q21, [start, #4 * 420]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -2245,8 +2193,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 388]
-    ldr     q21, [start, #4 * 420]
     ldr     q22, [start, #4 * 452]
     ldr     q23, [start, #4 * 484]
 
@@ -2271,12 +2217,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -2323,12 +2263,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -2371,33 +2305,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 100]
 
     str     q2, [start, #4 * 260]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 292]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 324]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 356]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 132]
-    str     q12, [start, #4 * 164]
-    str     q13, [start, #4 * 196]
-    str     q14, [start, #4 * 228]
-
     str     q6, [start, #4 * 388]
+
+    str     q12, [start, #4 * 164]
     str     q7, [start, #4 * 420]
+
+    str     q13, [start, #4 * 196]
     str     q15, [start, #4 * 452]
+
+    str     q14, [start, #4 * 228]
     str     q29, [start, #4 * 484]
 
     ldr     q0, [start, #4 * 8]
     ldr     q1, [start, #4 * 40]
+
     ldr     q2, [start, #4 * 72]
     ldr     q3, [start, #4 * 104]
 
@@ -2406,14 +2337,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 136]
     ldr     q5, [start, #4 * 168]
+
     ldr     q6, [start, #4 * 200]
     ldr     q7, [start, #4 * 232]
 
@@ -2430,18 +2356,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 264]
+    ldr     q17, [start, #4 * 296]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 264]
-    ldr     q17, [start, #4 * 296]
     ldr     q18, [start, #4 * 328]
     ldr     q19, [start, #4 * 360]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 392]
+    ldr     q21, [start, #4 * 424]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -2450,8 +2380,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 392]
-    ldr     q21, [start, #4 * 424]
     ldr     q22, [start, #4 * 456]
     ldr     q23, [start, #4 * 488]
 
@@ -2476,12 +2404,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -2528,12 +2450,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -2576,33 +2492,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 104]
 
     str     q2, [start, #4 * 264]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 296]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 328]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 360]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 136]
-    str     q12, [start, #4 * 168]
-    str     q13, [start, #4 * 200]
-    str     q14, [start, #4 * 232]
-
     str     q6, [start, #4 * 392]
+
+    str     q12, [start, #4 * 168]
     str     q7, [start, #4 * 424]
+
+    str     q13, [start, #4 * 200]
     str     q15, [start, #4 * 456]
+
+    str     q14, [start, #4 * 232]
     str     q29, [start, #4 * 488]
 
     ldr     q0, [start, #4 * 12]
     ldr     q1, [start, #4 * 44]
+
     ldr     q2, [start, #4 * 76]
     ldr     q3, [start, #4 * 108]
 
@@ -2611,14 +2524,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 140]
     ldr     q5, [start, #4 * 172]
+
     ldr     q6, [start, #4 * 204]
     ldr     q7, [start, #4 * 236]
 
@@ -2635,18 +2543,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 268]
+    ldr     q17, [start, #4 * 300]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 268]
-    ldr     q17, [start, #4 * 300]
     ldr     q18, [start, #4 * 332]
     ldr     q19, [start, #4 * 364]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 396]
+    ldr     q21, [start, #4 * 428]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -2655,8 +2567,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 396]
-    ldr     q21, [start, #4 * 428]
     ldr     q22, [start, #4 * 460]
     ldr     q23, [start, #4 * 492]
 
@@ -2681,12 +2591,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -2733,12 +2637,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -2781,33 +2679,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 108]
 
     str     q2, [start, #4 * 268]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 300]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 332]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 364]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 140]
-    str     q12, [start, #4 * 172]
-    str     q13, [start, #4 * 204]
-    str     q14, [start, #4 * 236]
-
     str     q6, [start, #4 * 396]
+
+    str     q12, [start, #4 * 172]
     str     q7, [start, #4 * 428]
+
+    str     q13, [start, #4 * 204]
     str     q15, [start, #4 * 460]
+
+    str     q14, [start, #4 * 236]
     str     q29, [start, #4 * 492]
 
     ldr     q0, [start, #4 * 16]
     ldr     q1, [start, #4 * 48]
+
     ldr     q2, [start, #4 * 80]
     ldr     q3, [start, #4 * 112]
 
@@ -2816,14 +2711,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 144]
     ldr     q5, [start, #4 * 176]
+
     ldr     q6, [start, #4 * 208]
     ldr     q7, [start, #4 * 240]
 
@@ -2840,18 +2730,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 272]
+    ldr     q17, [start, #4 * 304]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 272]
-    ldr     q17, [start, #4 * 304]
     ldr     q18, [start, #4 * 336]
     ldr     q19, [start, #4 * 368]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 400]
+    ldr     q21, [start, #4 * 432]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -2860,8 +2754,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 400]
-    ldr     q21, [start, #4 * 432]
     ldr     q22, [start, #4 * 464]
     ldr     q23, [start, #4 * 496]
 
@@ -2886,12 +2778,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -2938,12 +2824,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -2986,33 +2866,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 112]
 
     str     q2, [start, #4 * 272]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 304]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 336]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 368]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 144]
-    str     q12, [start, #4 * 176]
-    str     q13, [start, #4 * 208]
-    str     q14, [start, #4 * 240]
-
     str     q6, [start, #4 * 400]
+
+    str     q12, [start, #4 * 176]
     str     q7, [start, #4 * 432]
+
+    str     q13, [start, #4 * 208]
     str     q15, [start, #4 * 464]
+
+    str     q14, [start, #4 * 240]
     str     q29, [start, #4 * 496]
 
     ldr     q0, [start, #4 * 20]
     ldr     q1, [start, #4 * 52]
+
     ldr     q2, [start, #4 * 84]
     ldr     q3, [start, #4 * 116]
 
@@ -3021,14 +2898,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 148]
     ldr     q5, [start, #4 * 180]
+
     ldr     q6, [start, #4 * 212]
     ldr     q7, [start, #4 * 244]
 
@@ -3045,18 +2917,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 276]
+    ldr     q17, [start, #4 * 308]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 276]
-    ldr     q17, [start, #4 * 308]
     ldr     q18, [start, #4 * 340]
     ldr     q19, [start, #4 * 372]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 404]
+    ldr     q21, [start, #4 * 436]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -3065,8 +2941,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 404]
-    ldr     q21, [start, #4 * 436]
     ldr     q22, [start, #4 * 468]
     ldr     q23, [start, #4 * 500]
 
@@ -3091,12 +2965,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -3143,12 +3011,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -3191,33 +3053,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 116]
 
     str     q2, [start, #4 * 276]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 308]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 340]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 372]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 148]
-    str     q12, [start, #4 * 180]
-    str     q13, [start, #4 * 212]
-    str     q14, [start, #4 * 244]
-
     str     q6, [start, #4 * 404]
+
+    str     q12, [start, #4 * 180]
     str     q7, [start, #4 * 436]
+
+    str     q13, [start, #4 * 212]
     str     q15, [start, #4 * 468]
+
+    str     q14, [start, #4 * 244]
     str     q29, [start, #4 * 500]
 
     ldr     q0, [start, #4 * 24]
     ldr     q1, [start, #4 * 56]
+
     ldr     q2, [start, #4 * 88]
     ldr     q3, [start, #4 * 120]
 
@@ -3226,14 +3085,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 152]
     ldr     q5, [start, #4 * 184]
+
     ldr     q6, [start, #4 * 216]
     ldr     q7, [start, #4 * 248]
 
@@ -3250,18 +3104,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 280]
+    ldr     q17, [start, #4 * 312]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 280]
-    ldr     q17, [start, #4 * 312]
     ldr     q18, [start, #4 * 344]
     ldr     q19, [start, #4 * 376]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 408]
+    ldr     q21, [start, #4 * 440]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -3270,8 +3128,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 408]
-    ldr     q21, [start, #4 * 440]
     ldr     q22, [start, #4 * 472]
     ldr     q23, [start, #4 * 504]
 
@@ -3296,12 +3152,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -3348,12 +3198,6 @@ __asm_ntt_inverse:
     sub_add v9.4s, v6.4s, v13.4s
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
@@ -3396,33 +3240,30 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 120]
 
     str     q2, [start, #4 * 280]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 312]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 344]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 376]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 152]
-    str     q12, [start, #4 * 184]
-    str     q13, [start, #4 * 216]
-    str     q14, [start, #4 * 248]
-
     str     q6, [start, #4 * 408]
+
+    str     q12, [start, #4 * 184]
     str     q7, [start, #4 * 440]
+
+    str     q13, [start, #4 * 216]
     str     q15, [start, #4 * 472]
+
+    str     q14, [start, #4 * 248]
     str     q29, [start, #4 * 504]
 
     ldr     q0, [start, #4 * 28]
     ldr     q1, [start, #4 * 60]
+
     ldr     q2, [start, #4 * 92]
     ldr     q3, [start, #4 * 124]
 
@@ -3431,14 +3272,9 @@ __asm_ntt_inverse:
     sqdmulh v10.4s, v9.4s, v24.4s[1]
     add     v2.4s, v2.4s, v3.4s
 
-    // So now the order is:
-    // 0, 8, 2, 3
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     ldr     q4, [start, #4 * 156]
     ldr     q5, [start, #4 * 188]
+
     ldr     q6, [start, #4 * 220]
     ldr     q7, [start, #4 * 252]
 
@@ -3455,18 +3291,22 @@ __asm_ntt_inverse:
     sqdmulh v11.4s, v11.4s, v28.4s[3]
     sub     v5.4s, v12.4s, v11.4s
 
+    ldr     q16, [start, #4 * 284]
+    ldr     q17, [start, #4 * 316]
+
     sqdmulh v14.4s, v13.4s, v24.4s[3]
     mul     v13.4s, v13.4s, v26.4s[3]
     sqdmulh v13.4s, v13.4s, v28.4s[3]
     sub     v7.4s, v14.4s, v13.4s
 
-    ldr     q16, [start, #4 * 284]
-    ldr     q17, [start, #4 * 316]
     ldr     q18, [start, #4 * 348]
     ldr     q19, [start, #4 * 380]
 
     sub     v15.4s, v16.4s, v17.4s
     add     v16.4s, v16.4s, v17.4s
+
+    ldr     q20, [start, #4 * 412]
+    ldr     q21, [start, #4 * 444]
 
     sqdmulh v29.4s, v15.4s, v25.4s[0]
     sub     v30.4s, v18.4s, v19.4s
@@ -3475,8 +3315,6 @@ __asm_ntt_inverse:
     sqdmulh v15.4s, v15.4s, v28.4s[3]
     sub     v17.4s, v29.4s, v15.4s
 
-    ldr     q20, [start, #4 * 412]
-    ldr     q21, [start, #4 * 444]
     ldr     q22, [start, #4 * 476]
     ldr     q23, [start, #4 * 508]
 
@@ -3501,12 +3339,6 @@ __asm_ntt_inverse:
 
     sub_add v0.4s, v2.4s, v9.4s
     sub_add v8.4s, v3.4s, v10.4s
-
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 4, 5, 6, 7
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
 
     sub_add v4.4s, v6.4s, v1.4s
 
@@ -3554,12 +3386,6 @@ __asm_ntt_inverse:
     sub     v23.4s, v1.4s, v31.4s
     sub_add v10.4s, v7.4s, v14.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 16, 17, 18, 19
-    // 20, 21, 22, 23
-
     sub     v2.4s, v16.4s, v20.4s
     add     v16.4s, v16.4s, v20.4s
 
@@ -3601,32 +3427,26 @@ __asm_ntt_inverse:
     str     q10, [start, #4 * 124]
 
     str     q2, [start, #4 * 284]
+    sub_add v11.4s, v20.4s, v6.4s
     str     q3, [start, #4 * 316]
+    sub_add v12.4s, v21.4s, v7.4s
     str     q4, [start, #4 * 348]
+    sub_add v13.4s, v22.4s, v15.4s
     str     q5, [start, #4 * 380]
 
-    sub_add v11.4s, v20.4s, v6.4s
-    sub_add v12.4s, v21.4s, v7.4s
-    sub_add v13.4s, v22.4s, v15.4s
     sub_add v14.4s, v23.4s, v29.4s
 
-    // So now the order is:
-    // 0, 8, 9, 10
-    // 11, 12, 13, 14
-    // 2, 3, 4, 5
-    // 6, 7, 15, 29
-
     str     q11, [start, #4 * 156]
-    str     q12, [start, #4 * 188]
-    str     q13, [start, #4 * 220]
-    str     q14, [start, #4 * 252]
-
     str     q6, [start, #4 * 412]
-    str     q7, [start, #4 * 444]
-    str     q15, [start, #4 * 476]
-    str     q29, [start, #4 * 508]
 
-    // <END> LAYER 4321 .rept </END>
+    str     q12, [start, #4 * 188]
+    str     q7, [start, #4 * 444]
+
+    str     q13, [start, #4 * 220]
+    str     q15, [start, #4 * 476]
+
+    str     q14, [start, #4 * 252]
+    str     q29, [start, #4 * 508]
 
     sub     sp, sp, #64
     ld1     { v8.2s,  v9.2s, v10.2s, v11.2s}, [sp], #32
