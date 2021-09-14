@@ -51,6 +51,15 @@ void HashSession(unsigned char *k, int b, const unsigned char *y, const unsigned
 void Hide(unsigned char *c, unsigned char *r_enc, const Inputs r, const unsigned char *pk, const unsigned char *cache);
 void Decrypt(int8 *r, const Fq *B, const int8 *T, const small *a);
 
+void HashShort(small *out,const Inputs r);
+
 uint32 urandom32(void);
+void Expand(uint32 *L,const unsigned char *k);
+Fq Fq_freeze(int32 x);
+int8 Top(Fq C);
+void Small_decode(small *f,const unsigned char *s);
+int Ciphertexts_diff_mask(const unsigned char *c,const unsigned char *c2);
+int int16_negative_mask(int16 x);
+Fq Right(int8 T);
 
 #endif

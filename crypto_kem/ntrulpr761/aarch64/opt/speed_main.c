@@ -106,6 +106,10 @@ int main()
     }
     benchmark(t0, "Generator()");
 
+    // ---
+    printf("\n");
+    // ---
+
     /*----------------------------------------*/
     for (i = 0; i < NTESTS; i++)
     {
@@ -113,6 +117,18 @@ int main()
         Short_random(a);
     }
     benchmark(t0, "Short_random()");
+    // --------------------------------------------------
+    uint32 L[p];
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Short_fromlist(a,L);
+    }
+    benchmark(t0, "Short_fromlist()");
+
+    // ---
+    printf("\n");
+    // ---
 
     /*----------------------------------------*/
     for (i = 0; i < NTESTS; i++)
@@ -162,6 +178,16 @@ int main()
         Hash_prefix(sk, 4, pk, PublicKeys_bytes);
     }
     benchmark(t0, "Hash_prefix()");
+
+    printf("|------------------------------------------|--------------------|\n");
+    unsigned char c[4*p];
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        randombytes(c,4*p);
+    }
+    benchmark(t0, "randombytes(c,4*p);");
+    printf("|------------------------------------------|--------------------|\n");
 
     /* Benchmarking crypto_kem_enc */
 
@@ -238,12 +264,12 @@ int main()
 
     printf("|------------------------------------------|--------------------|\n");
 
-#define Confirm_bytes 32
-#define Top_bytes (I / 2)
-#define Rounded_bytes 1007
-#define Small_bytes ((p + 3) / 4)
-#define SecretKeys_bytes Small_bytes
-#define Ciphertexts_bytes (Rounded_bytes + Top_bytes)
+    #define Confirm_bytes 32
+    #define Top_bytes (I / 2)
+    #define Rounded_bytes 1007
+    #define Small_bytes ((p + 3) / 4)
+    #define SecretKeys_bytes Small_bytes
+    #define Ciphertexts_bytes (Rounded_bytes + Top_bytes)
     const unsigned char *pub = sk + SecretKeys_bytes;
     const unsigned char *rho = pk + PublicKeys_bytes;
     const unsigned char *ca = rho + Inputs_bytes;
@@ -256,7 +282,24 @@ int main()
     }
     benchmark(t0, "crypto_kem_dec(ss1, ct, sk)");
     printf("|------------------------------------------|--------------------|\n");
-
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Small_decode(a,sk);
+    }
+    benchmark(t0, "Small_decode()");
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Rounded_decode(B,ct);
+    }
+    benchmark(t0, "Rounded_decode()");
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Top_decode(T,ct+Rounded_bytes);
+    }
+    benchmark(t0, "Top_decode()");
     /*----------------------------------------*/
     for (i = 0; i < NTESTS; i++)
     {
@@ -273,33 +316,131 @@ int main()
     }
     benchmark(t0, "Hide()");
 
+    // --------------------------------------------------
+    int mask = Ciphertexts_diff_mask(ct,cnew);
+    for (i = 0;i < Inputs_bytes;++i) r_enc[i] ^= mask&(r_enc[i]^rho[i]);
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        HashSession(ss1,1+mask,r_enc,ct);
+    }
+    benchmark(t0, "HashSession()");
+
     printf("|------------------------------------------|--------------------|\n");
 
-    /* Benchmarking some utility functions */
-    printf("|- Short_random() -------------------------|--------------------|\n");
+    /* Benchmarking Hide() */
 
-    small out[p];
-    uint32 L[p];
-    for (i = 0; i < p; ++i)
-        L[i] = urandom32();
+    printf("|- Hide() ---------------------------------|--------------------|\n");
 
     /*----------------------------------------*/
     for (i = 0; i < NTESTS; i++)
     {
         t0[i] = counter_read();
-        urandom32();
+        Inputs_encode(r_enc,r);
     }
-    benchmark(t0, "urandom32()               ( x 761 )");
+    benchmark(t0, "Inputs_encode()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Rounded_decode(B,ct);
+    }
+    benchmark(t0, "Rounded_decode()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Generator(G, pk);
+    }
+    benchmark(t0, "Generator()");
+    /*----------------------------------------*/
+    small b[p];
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        HashShort(b,r);
+    }
+    benchmark(t0, "HashShort()");
+
+
+
+    /*----------------------------------------*/
+    unsigned char s[Inputs_bytes];
+    unsigned char hh[Hash_bytes];
+
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Inputs_encode(s,r);
+    }
+    benchmark(t0, "Inputs_encode()");
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Hash_prefix(hh,5,s,sizeof s);
+    }
+    benchmark(t0, "Hash_prefix()");
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Expand(L,hh);
+    }
+    benchmark(t0, "Expand()");
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Short_fromlist(b,L);
+    }
+    benchmark(t0, "Short_fromlist()");
+
+
+
+
+
+
 
     /*----------------------------------------*/
     for (i = 0; i < NTESTS; i++)
     {
         t0[i] = counter_read();
-        Short_fromlist(out, L);
+        Rq_mult_small(aG, G, a);
     }
-    benchmark(t0, "Short_fromlist()          ( x 1   )");
-
-    printf("|------------------------------------------|--------------------|\n");
+    benchmark(t0, "Rq_mult_small()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Round(A, aG);
+    }
+    benchmark(t0, "Round()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Rq_mult_small(aG, G, a);
+    }
+    benchmark(t0, "Rq_mult_small()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Rounded_encode(pk, A);
+    }
+    benchmark(t0, "Rounded_encode()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        Top_encode(ct,T);
+    }
+    benchmark(t0, "Top_encode()");
+    /*----------------------------------------*/
+    for (i = 0; i < NTESTS; i++)
+    {
+        t0[i] = counter_read();
+        HashConfirm(ct,r_enc,pk,cache);
+    }
+    benchmark(t0, "HashConfirm()");
 
     return KAT_SUCCESS;
 }
