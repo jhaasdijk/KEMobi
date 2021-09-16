@@ -1,4 +1,3 @@
-
 # Number Theoretic Transform (NTT)
 
 This directory contains the **Python** sources for performing NTT based
