@@ -17,11 +17,7 @@ subsequently test the executable by running the KAT generator.
 
 When compiling the source to benchmark the performance, simply execute `make
 speed`. This will build the sources into an executable called `benchmark.out`
-which you can execute to get speed numbers. The more preferred approach
-however, is to use the SUPERCOP toolkit for benchmarking cryptographic
-software. This toolkit includes various implementations for cryptographic
-primitives such as generating random bytes which produces a more representative
-benchmark when comparing with other key-encapsulation mechanisms.
+which you can execute to get speed numbers.
 
 Execute `make clean` to clean the directory.
 
@@ -35,15 +31,17 @@ The current benchmark for the performance of the reference implementation is:
 | Encapsulation  | 60 747 989 |
 | Decapsulation  | 90 930 810 |
 
-The current benchmark for the performance of our optimized implementation, using
-the SUPERCOP toolkit for benchmarking cryptographic software, is:
+The current benchmark for the performance of the optimized implementation is:
 
 | Operation      | Cycles    |
 | -------------- | --------- |
-| Key Generation |   744 579 |
-| Encapsulation  | 1 145 390 |
-| Decapsulation  | 1 423 435 |
+| Key Generation |   775 472 |
+| Encapsulation  | 1 150 294 |
+| Decapsulation  | 1 417 394 |
+
+Similar results can be obtained using the SUPERCOP toolkit for benchmarking
+cryptographic software. 
 
 **In total** this means that the performance cost for the key generation,
 encapsulation, and decapsulation of the reference implementation is reduced by
-by 98.02%, 98.11%, and 98.43% respectively in our optimized implementation.
+by 97.93%, 98.11%, and 98.44%, respectively in our optimized implementation.

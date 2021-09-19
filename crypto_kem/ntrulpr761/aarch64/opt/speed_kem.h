@@ -8,7 +8,7 @@
 #include <stdlib.h> /* for abort() in case of OpenSSL failures */
 #include "params.h"
 
-#include "randombytes.h"
+#include "pqax/randombytes.h"
 #include "crypto_hash_sha512.h"
 #ifdef LPR
 #include "crypto_stream_aes256ctr.h"

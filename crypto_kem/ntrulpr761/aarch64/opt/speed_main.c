@@ -14,7 +14,7 @@ int main()
         entropy_input[idx] = idx;
     }
 
-    randombytes_init(entropy_input, NULL, 256);
+    // randombytes_init(entropy_input, NULL, 256);
 
     for (idx = 0; idx < 1; idx++)
     {
@@ -42,7 +42,7 @@ int main()
     if (!sk)
         abort();
 
-    randombytes_init(seed[idx], NULL, 256);
+    // randombytes_init(seed[idx], NULL, 256);
 
     /* Verify the correctness of the KEM */
 
@@ -441,6 +441,7 @@ int main()
         HashConfirm(ct,r_enc,pk,cache);
     }
     benchmark(t0, "HashConfirm()");
+    printf("|------------------------------------------|--------------------|\n");
 
     return KAT_SUCCESS;
 }

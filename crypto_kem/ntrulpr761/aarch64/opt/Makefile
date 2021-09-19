@@ -17,7 +17,7 @@ LDLIBS += ${LIB}
 TARGET := ntrulpr761.out
 SPEED := benchmark.out
 
-C_FILES := Decode.c Encode.c int32.c uint32.c nist/rng.c
+C_FILES := Decode.c Encode.c int32.c uint32.c
 C_FILES += $(wildcard ./subroutines/*.c)
 C_FILES += $(wildcard ./ntt/*.c)
 S_FILES += $(wildcard ./ntt/*.s)
@@ -25,8 +25,8 @@ S_FILES += $(wildcard ./ntt/*.s)
 OBJ := ${C_FILES:.c=.o}
 ASM := ${S_FILES:.s=.o}
 
-OBJ_NIST := nist/kat_kem.o kem.o
-OBJ_SPEED := speed_main.o speed_kem.o
+OBJ_NIST := nist/kat_kem.o kem.o nist/rng.o
+OBJ_SPEED := speed_main.o speed_kem.o pqax/randombytes.o
 
 # Declare KAT related files, values
 KAT := kat_kem.int kat_kem.req kat_kem.rsp

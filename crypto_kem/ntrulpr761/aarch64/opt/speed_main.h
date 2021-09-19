@@ -20,7 +20,7 @@
 
 /* Include user header files */
 
-#include "nist/rng.h"
+#include "pqax/randombytes.h"
 #include "crypto_kem.h"
 #include "ntt/util.h"
 
